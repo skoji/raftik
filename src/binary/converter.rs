@@ -1,10 +1,4 @@
-#[derive(Debug, PartialEq, Eq)]
-pub struct Module {
-    pub magic: [u8; 4],
-    pub version: u32,
-}
-
-impl TryFrom<&[u8]> for Module {
+impl TryFrom<&[u8]> for crate::ast::Module {
     type Error = String;
 
     fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
@@ -15,13 +9,13 @@ impl TryFrom<&[u8]> for Module {
         let magic = [data[0], data[1], data[2], data[3]];
         let version = u32::from_le_bytes([data[4], data[5], data[6], data[7]]);
 
-        Ok(Module { magic, version })
+        Ok(crate::ast::Module { magic, version })
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::ast::Module;
 
     #[test]
     fn test_minimal_wasm() {
