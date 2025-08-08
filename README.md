@@ -8,7 +8,7 @@ Implement only what’s essential, and keep the code so clear you can read it in
 
 ## Status
 
-🚧 **Work in progress** – early implementation. Actually, there's nothing here yet. :-P
+🚧 **Work in progress** – early implementation. Actually, there's almost nothing here yet. :-P
 
 ## Name
 
