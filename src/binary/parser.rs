@@ -31,7 +31,7 @@ mod tests {
     fn test_parse_magic() {
         let input = b"\0asm";
         let result = parse_magic(input);
-        assert_eq!(result, Ok((&b""[..], b"\0asm".try_into().unwrap())));
+        assert_eq!(result, Ok((&b""[..], b"\0asm")));
     }
 
     #[test]
