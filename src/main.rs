@@ -11,7 +11,7 @@ fn main() {
     let wasm_file = &args[1];
     match std::fs::read(wasm_file) {
         Ok(data) => match Module::try_from(data.as_slice()) {
-            Ok(module) => println!("{:?}", module),
+            Ok(module) => println!("{:#?}", module),
             Err(e) => eprintln!("Error parsing module: {}", e),
         },
         Err(e) => eprintln!("Error reading file {}: {}", wasm_file, e),
