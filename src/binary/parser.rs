@@ -14,7 +14,12 @@ pub fn parse_module(input: &[u8]) -> IResult<&[u8], Module> {
 
 fn parse_magic(input: &[u8]) -> IResult<&[u8], &[u8; 4]> {
     let (input, magic) = tag(&b"\0asm"[..])(input)?;
-    Ok((input, magic.try_into().unwrap()))
+    Ok((
+        input,
+        magic
+            .try_into()
+            .expect("tag ensures slice is exactly 4 bytes long"),
+    ))
 }
 
 fn parse_version(input: &[u8]) -> IResult<&[u8], u32> {
