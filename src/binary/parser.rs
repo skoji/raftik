@@ -1,5 +1,5 @@
 use crate::ast::Module;
-use nom::{bytes::complete::tag, number::complete::le_u32, IResult};
+use nom::{IResult, bytes::complete::tag, number::complete::le_u32};
 
 pub fn parse_module(input: &[u8]) -> IResult<&[u8], Module<'_>> {
     let (input, magic) = parse_magic(input)?;
