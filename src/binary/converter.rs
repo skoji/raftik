@@ -6,7 +6,7 @@ impl TryFrom<&[u8]> for crate::ast::Module {
     fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
         match parse_module(data) {
             Ok((_, module)) => Ok(module),
-            Err(_) => Err("parse failed".to_string()),
+            Err(e) => Err(format!("parse failed: {:?}", e)),
         }
     }
 }
