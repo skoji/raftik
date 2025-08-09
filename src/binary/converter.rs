@@ -1,15 +1,13 @@
+use crate::binary::parser::parse_module;
+
 impl TryFrom<&[u8]> for crate::ast::Module {
     type Error = String;
 
     fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
-        if data.len() < 8 {
-            return Err("Data too short to contain a valid Module".to_string());
+        match parse_module(data) {
+            Ok((_, module)) => Ok(module),
+            Err(e) => Err(format!("parse failed: {:?}", e)),
         }
-
-        let magic = [data[0], data[1], data[2], data[3]];
-        let version = u32::from_le_bytes([data[4], data[5], data[6], data[7]]);
-
-        Ok(crate::ast::Module { magic, version })
     }
 }
 
