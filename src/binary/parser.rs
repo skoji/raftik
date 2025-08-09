@@ -1,12 +1,13 @@
 use crate::ast::Module;
-use nom::{IResult, bytes::complete::tag, number::complete::le_u32};
+use nom::{bytes::complete::tag, number::complete::le_u32, IResult};
 
-pub fn parse_module(input: &[u8]) -> IResult<&[u8], Module> {
+pub fn parse_module(input: &[u8]) -> IResult<&[u8], Module<'_>> {
     let (input, magic) = parse_magic(input)?;
     let (input, version) = parse_version(input)?;
     let module = Module {
         magic: *magic,
         version,
+        sections: Vec::new(), // Placeholder for sections, to be implemented later
     };
 
     Ok((input, module))
@@ -69,7 +70,8 @@ mod tests {
                 &b""[..],
                 Module {
                     magic: *b"\0asm",
-                    version: 1
+                    version: 1,
+                    sections: Vec::new(),
                 }
             ))
         );

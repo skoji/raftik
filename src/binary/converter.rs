@@ -1,9 +1,9 @@
 use crate::binary::parser::parse_module;
 
-impl TryFrom<&[u8]> for crate::ast::Module {
+impl<'a> TryFrom<&'a [u8]> for crate::ast::Module<'a> {
     type Error = String;
 
-    fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
+    fn try_from(data: &'a [u8]) -> Result<Self, Self::Error> {
         match parse_module(data) {
             Ok((_, module)) => Ok(module),
             Err(e) => Err(format!("parse failed: {:?}", e)),
