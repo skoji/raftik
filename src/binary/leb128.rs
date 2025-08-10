@@ -1,13 +1,15 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Leb128Err {
-    Unterminated, 
+    Unterminated,
     Overflow,
 }
 
 #[inline]
-pub fn decode_uleb128_u64(input: &[u8], max_bytes: usize, max_bits: u32)
-    -> Result<(u64, usize), Leb128Err>
-{
+pub fn decode_uleb128_u64(
+    input: &[u8],
+    max_bytes: usize,
+    max_bits: u32,
+) -> Result<(u64, usize), Leb128Err> {
     let mut result: u64 = 0;
     let mut shift: u32 = 0;
     let mut used = 0usize;
@@ -27,15 +29,19 @@ pub fn decode_uleb128_u64(input: &[u8], max_bytes: usize, max_bits: u32)
         }
 
         shift += 7;
-        if shift >= max_bits { return Err(Leb128Err::Overflow); }
+        if shift >= max_bits {
+            return Err(Leb128Err::Overflow);
+        }
     }
     Err(Leb128Err::Unterminated)
 }
 
 #[inline]
-pub fn decode_sleb128_i64(input: &[u8], max_bytes: usize, max_bits: u32)
-    -> Result<(i64, usize), Leb128Err>
-{
+pub fn decode_sleb128_i64(
+    input: &[u8],
+    max_bytes: usize,
+    max_bits: u32,
+) -> Result<(i64, usize), Leb128Err> {
     let mut result: i64 = 0;
     let mut shift: u32 = 0;
     let mut used = 0usize;
@@ -57,9 +63,11 @@ pub fn decode_sleb128_i64(input: &[u8], max_bytes: usize, max_bits: u32)
             }
             return Ok((result, used));
         }
-        if shift >= max_bits { return Err(Leb128Err::Overflow); }
+        if shift >= max_bits {
+            return Err(Leb128Err::Overflow);
+        }
     }
-    Err(Leb128Err::Unterminated)    
+    Err(Leb128Err::Unterminated)
 }
 
 #[cfg(test)]
@@ -74,8 +82,7 @@ mod tests {
 
     #[test]
     fn test_decode_uleb128_u64_overflow() {
-        let input = [0xFF, 0xFF, 0xFF,
-                     0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
+        let input = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
         let result = decode_uleb128_u64(&input, 8, 64);
         assert!(result.is_err());
         matches!(result.err(), Some(Leb128Err::Overflow));
@@ -83,7 +90,7 @@ mod tests {
 
     #[test]
     fn test_decode_uleb128_u64_unterminated() {
-        let input = [0xE5, 0x8E]; 
+        let input = [0xE5, 0x8E];
         let result = decode_uleb128_u64(&input, 2, 64);
         assert!(result.is_err());
         matches!(result.err(), Some(Leb128Err::Unterminated));
@@ -102,5 +109,4 @@ mod tests {
         let result = decode_sleb128_i64(&input, 2, 16);
         assert_eq!(result, Ok((-1, 2)));
     }
-    
 }
