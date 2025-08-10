@@ -83,9 +83,9 @@ mod tests {
     #[test]
     fn test_decode_uleb128_u64_overflow() {
         let input = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
-        let result = decode_uleb128_u64(&input, 8, 64);
+        let result = decode_uleb128_u64(&input, 8, 32);
         assert!(result.is_err());
-        matches!(result.err(), Some(Leb128Err::Overflow));
+        assert_eq!(result, Err(Leb128Err::Overflow));
     }
 
     #[test]
@@ -93,7 +93,7 @@ mod tests {
         let input = [0xE5, 0x8E];
         let result = decode_uleb128_u64(&input, 2, 64);
         assert!(result.is_err());
-        matches!(result.err(), Some(Leb128Err::Unterminated));
+        assert_eq!(result, Err(Leb128Err::Unterminated));
     }
 
     #[test]
