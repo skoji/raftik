@@ -7,9 +7,7 @@ pub fn parse_varuint32<'a, E: ParseError<&'a [u8]>>(i: &'a [u8]) -> IResult<&'a 
     match decode_uleb128_u64(i, 5, 32) {
         // ceil(32/7)=5
         Ok((v, used)) => {
-            let v32 = u32::try_from(v)
-                .map_err(|_| NomErr::Error(E::from_error_kind(i, ErrorKind::TooLarge)))?;
-            Ok((&i[used..], v32))
+            Ok((&i[used..], v as u32))
         }
         Err(Leb128Err::Unterminated) => Err(NomErr::Incomplete(nom::Needed::Unknown)),
         Err(_) => Err(NomErr::Error(E::from_error_kind(i, ErrorKind::Fail))),
@@ -29,9 +27,7 @@ pub fn parse_varint32<'a, E: ParseError<&'a [u8]>>(i: &'a [u8]) -> IResult<&'a [
     match decode_sleb128_i64(i, 5, 32) {
         // ceil(32/7)=5
         Ok((v, used)) => {
-            let v32 = i32::try_from(v)
-                .map_err(|_| NomErr::Error(E::from_error_kind(i, ErrorKind::TooLarge)))?;
-            Ok((&i[used..], v32))
+            Ok((&i[used..], v as i32))
         }
         Err(Leb128Err::Unterminated) => Err(NomErr::Incomplete(nom::Needed::Unknown)),
         Err(_) => Err(NomErr::Error(E::from_error_kind(i, ErrorKind::Fail))),
