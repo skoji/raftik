@@ -6,9 +6,7 @@ use nom::{Err as NomErr, IResult};
 pub fn parse_varuint32<'a, E: ParseError<&'a [u8]>>(i: &'a [u8]) -> IResult<&'a [u8], u32, E> {
     match decode_uleb128_u64(i, 5, 32) {
         // ceil(32/7)=5
-        Ok((v, used)) => {
-            Ok((&i[used..], v as u32))
-        }
+        Ok((v, used)) => Ok((&i[used..], v as u32)),
         Err(Leb128Err::Unterminated) => Err(NomErr::Incomplete(nom::Needed::Unknown)),
         Err(_) => Err(NomErr::Error(E::from_error_kind(i, ErrorKind::Fail))),
     }
@@ -26,9 +24,7 @@ pub fn parse_varuint64<'a, E: ParseError<&'a [u8]>>(i: &'a [u8]) -> IResult<&'a 
 pub fn parse_varint32<'a, E: ParseError<&'a [u8]>>(i: &'a [u8]) -> IResult<&'a [u8], i32, E> {
     match decode_sleb128_i64(i, 5, 32) {
         // ceil(32/7)=5
-        Ok((v, used)) => {
-            Ok((&i[used..], v as i32))
-        }
+        Ok((v, used)) => Ok((&i[used..], v as i32)),
         Err(Leb128Err::Unterminated) => Err(NomErr::Incomplete(nom::Needed::Unknown)),
         Err(_) => Err(NomErr::Error(E::from_error_kind(i, ErrorKind::Fail))),
     }
