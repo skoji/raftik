@@ -61,6 +61,14 @@ pub fn decode_sleb128_i64(
                 // Sign extend if the sign bit is set
                 result |= -1i64 << shift;
             }
+            // check the range of the result
+            if max_bits < 64 {
+                let min = -(1i64 << (max_bits - 1));
+                let max = (1i64 << (max_bits - 1)) - 1;
+                if result < min || result > max {
+                    return Err(Leb128Err::Overflow);
+                }
+            }
             return Ok((result, used));
         }
         if shift >= max_bits {
