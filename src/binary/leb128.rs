@@ -5,7 +5,7 @@ pub enum Leb128Err {
 }
 
 #[inline]
-fn decode_uleb128_u64(input: &[u8], max_bytes: usize, max_bits: u32)
+pub fn decode_uleb128_u64(input: &[u8], max_bytes: usize, max_bits: u32)
     -> Result<(u64, usize), Leb128Err>
 {
     let mut result: u64 = 0;
@@ -33,7 +33,7 @@ fn decode_uleb128_u64(input: &[u8], max_bytes: usize, max_bits: u32)
 }
 
 #[inline]
-fn decode_sleb128_i64(input: &[u8], max_bytes: usize, max_bits: u32)
+pub fn decode_sleb128_i64(input: &[u8], max_bytes: usize, max_bits: u32)
     -> Result<(i64, usize), Leb128Err>
 {
     let mut result: i64 = 0;
@@ -95,4 +95,12 @@ mod tests {
         let result = decode_sleb128_i64(&input, 4, 64);
         assert_eq!(result, Ok((-123456, 3)));
     }
+
+    #[test]
+    fn test_decode_sleb128_i32() {
+        let input = [0xff, 0x7f];
+        let result = decode_sleb128_i64(&input, 2, 16);
+        assert_eq!(result, Ok((-1, 2)));
+    }
+    
 }
