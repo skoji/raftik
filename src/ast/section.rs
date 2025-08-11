@@ -25,7 +25,7 @@ pub struct SectionHeader {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Section<'a> {
-    Unkown(RawSection<'a>),
+    Unknown(RawSection<'a>),
     Type(TypeSection),
 }
 

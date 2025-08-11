@@ -47,7 +47,7 @@ fn parse_sections(input: &[u8]) -> IResult<&[u8], Vec<Section<'_>>> {
 fn parse_section(input: &[u8]) -> IResult<&[u8], Section<'_>> {
     let (input, header) = parse_section_header(input)?;
     let (input, payload) = nom::bytes::complete::take(header.payload_length)(input)?;
-    let section = Section::Unkown(RawSection { header, payload });
+    let section = Section::Unknown(RawSection { header, payload });
     Ok((input, section))
 }
 
