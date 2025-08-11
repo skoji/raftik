@@ -42,7 +42,7 @@ mod tests {
                 assert_eq!(rawsection.header.id, SectionId::Type as u8);
                 assert_eq!(rawsection.header.payload_length, 4);
             }
-            _ => panic!("Expected a Unknown section"),
+            _ => panic!("Expected an Unknown section"),
         }
     }
 
