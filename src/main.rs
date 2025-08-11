@@ -1,4 +1,4 @@
-use raftik::ast::Module;
+use raftik::binary::raw_module::RawModule;
 use std::env;
 
 fn main() {
@@ -10,7 +10,7 @@ fn main() {
 
     let wasm_file = &args[1];
     match std::fs::read(wasm_file) {
-        Ok(data) => match Module::try_from(data.as_slice()) {
+        Ok(data) => match RawModule::try_from(data.as_slice()) {
             Ok(module) => println!("{:#?}", module),
             Err(e) => eprintln!("Error parsing module: {}", e),
         },

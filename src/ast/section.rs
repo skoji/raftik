@@ -24,12 +24,6 @@ pub struct SectionHeader {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum Section<'a> {
-    Unknown(RawSection<'a>),
-    Type(TypeSection),
-}
-
-#[derive(Debug, PartialEq, Eq)]
 pub struct RawSection<'a> {
     pub header: SectionHeader,
     pub payload: &'a [u8],

@@ -1,13 +1,12 @@
-use crate::ast::Module;
-use crate::ast::section::{RawSection, Section, SectionHeader};
+use crate::binary::raw_module::{RawModule, RawSection, SectionHeader};
 use crate::binary::integer::parse_varuint32;
 use nom::{IResult, bytes::complete::tag, number::complete::le_u32};
 
-pub fn parse_module(input: &[u8]) -> IResult<&[u8], Module<'_>> {
+pub fn parse_module(input: &[u8]) -> IResult<&[u8], RawModule<'_>> {
     let (input, magic) = parse_magic(input)?;
     let (input, version) = parse_version(input)?;
-    let (input, sections) = parse_sections(input)?;
-    let module = Module {
+    let (input, sections) = parse_raw_sections(input)?;
+    let module = RawModule {
         magic: *magic,
         version,
         sections,
@@ -31,12 +30,12 @@ fn parse_version(input: &[u8]) -> IResult<&[u8], u32> {
     Ok((input, version))
 }
 
-fn parse_sections(input: &[u8]) -> IResult<&[u8], Vec<Section<'_>>> {
+fn parse_raw_sections(input: &[u8]) -> IResult<&[u8], Vec<RawSection<'_>>> {
     let mut sections = Vec::new();
     let mut remaining_input = input;
 
     while !remaining_input.is_empty() {
-        let (input, section) = parse_section(remaining_input)?;
+        let (input, section) = parse_raw_section(remaining_input)?;
         sections.push(section);
         remaining_input = input;
     }
@@ -44,10 +43,10 @@ fn parse_sections(input: &[u8]) -> IResult<&[u8], Vec<Section<'_>>> {
     Ok((remaining_input, sections))
 }
 
-fn parse_section(input: &[u8]) -> IResult<&[u8], Section<'_>> {
+fn parse_raw_section(input: &[u8]) -> IResult<&[u8], RawSection<'_>> {
     let (input, header) = parse_section_header(input)?;
     let (input, payload) = nom::bytes::complete::take(header.payload_length)(input)?;
-    let section = Section::Unknown(RawSection { header, payload });
+    let section = RawSection { header, payload };
     Ok((input, section))
 }
 
@@ -104,7 +103,7 @@ mod tests {
             result,
             Ok((
                 &b""[..],
-                Module {
+                RawModule {
                     magic: *b"\0asm",
                     version: 1,
                     sections: Vec::new(),
