@@ -1,12 +1,16 @@
 use crate::ast::Module;
+use crate::ast::section::{RawSection, Section, SectionHeader};
+use crate::binary::integer::parse_varuint32;
 use nom::{IResult, bytes::complete::tag, number::complete::le_u32};
 
-pub fn parse_module(input: &[u8]) -> IResult<&[u8], Module> {
+pub fn parse_module(input: &[u8]) -> IResult<&[u8], Module<'_>> {
     let (input, magic) = parse_magic(input)?;
     let (input, version) = parse_version(input)?;
+    let (input, sections) = parse_sections(input)?;
     let module = Module {
         magic: *magic,
         version,
+        sections,
     };
 
     Ok((input, module))
@@ -25,6 +29,39 @@ fn parse_magic(input: &[u8]) -> IResult<&[u8], &[u8; 4]> {
 fn parse_version(input: &[u8]) -> IResult<&[u8], u32> {
     let (input, version) = le_u32(input)?;
     Ok((input, version))
+}
+
+fn parse_sections(input: &[u8]) -> IResult<&[u8], Vec<Section<'_>>> {
+    let mut sections = Vec::new();
+    let mut remaining_input = input;
+
+    while !remaining_input.is_empty() {
+        let (input, section) = parse_section(remaining_input)?;
+        sections.push(section);
+        remaining_input = input;
+    }
+
+    Ok((remaining_input, sections))
+}
+
+fn parse_section(input: &[u8]) -> IResult<&[u8], Section<'_>> {
+    let (input, header) = parse_section_header(input)?;
+    let (input, payload) = nom::bytes::complete::take(header.payload_length)(input)?;
+    let section = Section::Unknown(RawSection { header, payload });
+    Ok((input, section))
+}
+
+fn parse_section_header(input: &[u8]) -> IResult<&[u8], SectionHeader> {
+    let (input, id) = nom::bytes::complete::take(1usize)(input)?;
+    let (input, payload_length) = parse_varuint32(input)?;
+
+    Ok((
+        input,
+        SectionHeader {
+            id: id[0],
+            payload_length,
+        },
+    ))
 }
 
 #[cfg(test)]
@@ -69,7 +106,8 @@ mod tests {
                 &b""[..],
                 Module {
                     magic: *b"\0asm",
-                    version: 1
+                    version: 1,
+                    sections: Vec::new(),
                 }
             ))
         );
