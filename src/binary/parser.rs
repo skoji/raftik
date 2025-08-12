@@ -1,10 +1,10 @@
 mod integer;
 mod leb128;
 mod raw_module;
+mod section;
 
 use super::raw_module::{RawSection, SectionID};
 use crate::ast::Module;
-use crate::ast::section::TypeSection;
 use raw_module::parse_raw_module;
 
 impl TryFrom<&[u8]> for Module {
@@ -57,20 +57,4 @@ fn assign_once<T>(slot: &mut Option<T>, val: T) -> Result<(), String> {
     }
     *slot = Some(val);
     Ok(())
-}
-
-impl<'a> TryFrom<RawSection<'a>> for TypeSection {
-    type Error = String;
-
-    fn try_from(raw: RawSection<'a>) -> Result<Self, Self::Error> {
-        if raw.header.id != SectionID::Type {
-            return Err("RawSection is not a TypeSection".to_string());
-        }
-
-        // Here you would parse the payload into the TypeSection structure
-        // For now, we will just return an empty TypeSection
-        Ok(TypeSection {
-            types: Vec::new(), // Placeholder for actual type parsing logic
-        })
-    }
 }
