@@ -2,7 +2,18 @@ use crate::binary::integer::parse_varuint32;
 use crate::binary::raw_module::{RawModule, RawSection, SectionHeader, SectionID};
 use nom::{IResult, bytes::complete::tag, number::complete::le_u32};
 
-pub fn parse_module(input: &[u8]) -> IResult<&[u8], RawModule<'_>> {
+impl<'a> TryFrom<&'a [u8]> for RawModule<'a> {
+    type Error = String;
+
+    fn try_from(data: &'a [u8]) -> Result<Self, Self::Error> {
+        match parse_raw_module(data) {
+            Ok((_, module)) => Ok(module),
+            Err(e) => Err(format!("parse failed: {:?}", e)),
+        }
+    }
+}
+
+pub fn parse_raw_module(input: &[u8]) -> IResult<&[u8], RawModule<'_>> {
     let (input, magic) = parse_magic(input)?;
     let (input, version) = parse_version(input)?;
     let (input, sections) = parse_raw_sections(input)?;
@@ -72,6 +83,39 @@ fn parse_section_id(input: &[u8]) -> IResult<&[u8], SectionID> {
 mod tests {
 
     use super::*;
+    use crate::binary::raw_module::*;
+
+    #[test]
+    fn test_minimal_wasm() {
+        let wasm = wat::parse_str("(module)").unwrap();
+        let module: RawModule = RawModule::try_from(wasm.as_ref()).unwrap();
+        assert_eq!(module.magic, [0x00, 0x61, 0x73, 0x6d]);
+        assert_eq!(module.version, 1);
+        assert_eq!(module.sections.len(), 0);
+    }
+
+    #[test]
+    fn test_module_with_only_type_section() {
+        let wasm = wat::parse_str(
+            "(module
+                (type (func))
+            )",
+        )
+        .unwrap();
+        let module: RawModule = RawModule::try_from(wasm.as_ref()).unwrap();
+        assert_eq!(module.magic, [0x00, 0x61, 0x73, 0x6d]);
+        assert_eq!(module.version, 1);
+        assert_eq!(module.sections.len(), 1);
+        assert_eq!(module.sections[0].header.id, SectionID::Type);
+        assert_eq!(module.sections[0].header.payload_length, 4);
+    }
+
+    #[test]
+    fn test_module_try_from_short_data() {
+        let data: &[u8] = &[0x4d, 0x4f];
+        let result = RawModule::try_from(data);
+        assert!(result.is_err());
+    }
 
     #[test]
     fn test_parse_magic() {
@@ -103,7 +147,7 @@ mod tests {
     #[test]
     fn test_parse_module() {
         let input = b"\0asm\x01\x00\x00\x00";
-        let result = parse_module(input);
+        let result = parse_raw_module(input);
         assert_eq!(
             result,
             Ok((
