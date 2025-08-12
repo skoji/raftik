@@ -24,6 +24,23 @@ pub enum ReferenceType {
     ExternRef = 0x6f,
 }
 
+impl TryFrom<u8> for ValueType {
+    type Error = &'static str;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x7F => Ok(ValueType::Number(NumberType::I32)),
+            0x7E => Ok(ValueType::Number(NumberType::I64)),
+            0x7D => Ok(ValueType::Number(NumberType::F32)),
+            0x7C => Ok(ValueType::Number(NumberType::F64)),
+            0x7B => Ok(ValueType::Vector(VectorType::V128)),
+            0x70 => Ok(ValueType::Reference(ReferenceType::FuncRef)),
+            0x6F => Ok(ValueType::Reference(ReferenceType::ExternRef)),
+            _ => Err("Invalid ValueType"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FunctionType {
     pub params: Vec<ValueType>,
