@@ -13,8 +13,7 @@ impl<'a> TryFrom<&'a [u8]> for crate::binary::raw_module::RawModule<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::binary::raw_module::RawModule;
-    use crate::ast::section::*;
+    use crate::binary::raw_module::*;
 
     #[test]
     fn test_minimal_wasm() {
@@ -37,7 +36,7 @@ mod tests {
         assert_eq!(module.magic, [0x00, 0x61, 0x73, 0x6d]);
         assert_eq!(module.version, 1);
         assert_eq!(module.sections.len(), 1);
-        assert_eq!(module.sections[0].header.id, SectionId::Type as u8);
+        assert_eq!(module.sections[0].header.id, SectionID::Type);
         assert_eq!(module.sections[0].header.payload_length, 4);
     }
 

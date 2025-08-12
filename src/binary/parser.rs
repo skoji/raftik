@@ -1,5 +1,5 @@
-use crate::binary::raw_module::{RawModule, RawSection, SectionHeader};
 use crate::binary::integer::parse_varuint32;
+use crate::binary::raw_module::{RawModule, RawSection, SectionHeader, SectionID};
 use nom::{IResult, bytes::complete::tag, number::complete::le_u32};
 
 pub fn parse_module(input: &[u8]) -> IResult<&[u8], RawModule<'_>> {
@@ -51,16 +51,21 @@ fn parse_raw_section(input: &[u8]) -> IResult<&[u8], RawSection<'_>> {
 }
 
 fn parse_section_header(input: &[u8]) -> IResult<&[u8], SectionHeader> {
-    let (input, id) = nom::bytes::complete::take(1usize)(input)?;
+    let (input, id) = parse_section_id(input)?;
     let (input, payload_length) = parse_varuint32(input)?;
 
-    Ok((
-        input,
-        SectionHeader {
-            id: id[0],
-            payload_length,
-        },
-    ))
+    Ok((input, SectionHeader { id, payload_length }))
+}
+
+fn parse_section_id(input: &[u8]) -> IResult<&[u8], SectionID> {
+    let (input, id_byte) = nom::number::complete::u8(input)?;
+    match SectionID::try_from(id_byte) {
+        Ok(id) => Ok((input, id)),
+        Err(_) => Err(nom::Err::Error(nom::error::Error::new(
+            input,
+            nom::error::ErrorKind::Alt,
+        ))),
+    }
 }
 
 #[cfg(test)]
