@@ -12,6 +12,7 @@ pub fn parse_varuint32<'a, E: ParseError<&'a [u8]>>(i: &'a [u8]) -> IResult<&'a 
     }
 }
 
+#[allow(dead_code)]
 pub fn parse_varuint64<'a, E: ParseError<&'a [u8]>>(i: &'a [u8]) -> IResult<&'a [u8], u64, E> {
     match decode_uleb128_u64(i, 10, 64) {
         // ceil(64/7)=10
@@ -20,7 +21,7 @@ pub fn parse_varuint64<'a, E: ParseError<&'a [u8]>>(i: &'a [u8]) -> IResult<&'a 
         Err(_) => Err(NomErr::Error(E::from_error_kind(i, ErrorKind::Fail))),
     }
 }
-
+#[allow(dead_code)]
 pub fn parse_varint32<'a, E: ParseError<&'a [u8]>>(i: &'a [u8]) -> IResult<&'a [u8], i32, E> {
     match decode_sleb128_i64(i, 5, 32) {
         // ceil(32/7)=5
@@ -29,7 +30,7 @@ pub fn parse_varint32<'a, E: ParseError<&'a [u8]>>(i: &'a [u8]) -> IResult<&'a [
         Err(_) => Err(NomErr::Error(E::from_error_kind(i, ErrorKind::Fail))),
     }
 }
-
+#[allow(dead_code)]
 pub fn parse_varint64<'a, E: ParseError<&'a [u8]>>(i: &'a [u8]) -> IResult<&'a [u8], i64, E> {
     match decode_sleb128_i64(i, 10, 64) {
         // ceil(64/7)=10

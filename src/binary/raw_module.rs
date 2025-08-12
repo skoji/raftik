@@ -15,10 +15,6 @@ pub enum SectionID {
     DataCount = 12,
 }
 
-pub enum SectionIdError {
-    InvalidSectionId(u8),
-}
-
 impl TryFrom<u8> for SectionID {
     type Error = ();
 
