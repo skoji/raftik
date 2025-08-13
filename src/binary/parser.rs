@@ -2,6 +2,7 @@ mod integer;
 mod leb128;
 mod raw_module;
 mod section;
+mod types;
 
 use super::raw_module::{RawSection, SectionID};
 use crate::ast::Module;
