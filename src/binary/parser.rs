@@ -2,6 +2,7 @@ mod integer;
 mod leb128;
 mod raw_module;
 mod section;
+mod types;
 
 use super::raw_module::{RawSection, SectionID};
 use crate::ast::Module;
@@ -57,4 +58,36 @@ fn assign_once<T>(slot: &mut Option<T>, val: T) -> Result<(), String> {
     }
     *slot = Some(val);
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::ast::types::*;
+    use crate::ast::{Module, TypeSection};
+    #[test]
+    fn test_minimal_wasm() {
+        let wasm = wat::parse_str("(module)").unwrap();
+        let module = Module::try_from(wasm.as_ref()).unwrap();
+        assert_eq!(module, Module::default());
+    }
+
+    #[test]
+    fn test_wasm_with_type_section() {
+        let wasm = wat::parse_str("(module (type (func (param i32 i32) (result i64))))").unwrap();
+        let module = Module::try_from(wasm.as_ref()).unwrap();
+        assert_eq!(
+            module,
+            Module {
+                type_section: Some(TypeSection {
+                    types: vec![FunctionType {
+                        params: vec![
+                            ValueType::Number(NumberType::I32),
+                            ValueType::Number(NumberType::I32)
+                        ],
+                        results: vec![ValueType::Number(NumberType::I64)],
+                    }]
+                })
+            }
+        );
+    }
 }
