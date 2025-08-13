@@ -4,19 +4,6 @@ use nom::bytes::complete::tag;
 use nom::multi::length_count;
 use nom::{IResult, Parser};
 
-pub fn vec_leb<'a, T, F>(
-    elem: F,
-) -> impl Parser<
-    &'a [u8],
-    Output = Vec<<F as Parser<&'a [u8]>>::Output>,
-    Error = nom::error::Error<&'a [u8]>,
->
-where
-    F: FnMut(&'a [u8]) -> IResult<&'a [u8], T>,
-{
-    length_count(parse_varuint32, elem)
-}
-
 pub fn parse_value_type(input: &[u8]) -> IResult<&[u8], ValueType> {
     let (input, value_type_byte) = nom::number::complete::u8(input)?;
     let value_type: ValueType = value_type_byte.try_into().map_err(|_| {
@@ -27,8 +14,8 @@ pub fn parse_value_type(input: &[u8]) -> IResult<&[u8], ValueType> {
 
 pub fn parse_function_type(i: &[u8]) -> IResult<&[u8], FunctionType> {
     let (i, _) = tag(&[0x60u8][..])(i)?;
-    let (i, params) = vec_leb(parse_value_type).parse(i)?;
-    let (i, results) = vec_leb(parse_value_type).parse(i)?;
+    let (i, params) = length_count(parse_varuint32, parse_value_type).parse(i)?;
+    let (i, results) = length_count(parse_varuint32, parse_value_type).parse(i)?;
     Ok((i, FunctionType { params, results }))
 }
 
