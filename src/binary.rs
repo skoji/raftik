@@ -1,4 +1,2 @@
-pub mod converter;
-pub mod integer;
-mod leb128;
 pub mod parser;
+mod raw_module;

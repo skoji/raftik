@@ -1,115 +1,60 @@
+mod integer;
+mod leb128;
+mod raw_module;
+mod section;
+
+use super::raw_module::{RawSection, SectionID};
 use crate::ast::Module;
-use crate::ast::section::{RawSection, Section, SectionHeader};
-use crate::binary::integer::parse_varuint32;
-use nom::{IResult, bytes::complete::tag, number::complete::le_u32};
+use raw_module::parse_raw_module;
 
-pub fn parse_module(input: &[u8]) -> IResult<&[u8], Module<'_>> {
-    let (input, magic) = parse_magic(input)?;
-    let (input, version) = parse_version(input)?;
-    let (input, sections) = parse_sections(input)?;
-    let module = Module {
-        magic: *magic,
-        version,
-        sections,
-    };
+impl TryFrom<&[u8]> for Module {
+    type Error = String;
 
-    Ok((input, module))
-}
+    fn try_from(input: &[u8]) -> Result<Self, Self::Error> {
+        let (remaining, raw) =
+            parse_raw_module(input).map_err(|e| format!("Failed to parse raw module: {}", e))?;
 
-fn parse_magic(input: &[u8]) -> IResult<&[u8], &[u8; 4]> {
-    let (input, magic) = tag(&b"\0asm"[..])(input)?;
-    Ok((
-        input,
-        magic
-            .try_into()
-            .expect("tag ensures slice is exactly 4 bytes long"),
-    ))
-}
+        if !remaining.is_empty() {
+            return Err("Extra data after module".to_string());
+        }
 
-fn parse_version(input: &[u8]) -> IResult<&[u8], u32> {
-    let (input, version) = le_u32(input)?;
-    Ok((input, version))
-}
+        // check id order
+        let mut last_id = 0u8;
+        for rs in &raw.sections {
+            if rs.header.id == SectionID::Custom {
+                continue; // Custom sections are not checked for ID order
+            }
+            if rs.header.id as u8 <= last_id {
+                return Err(format!(
+                    "Section IDs must be in ascending order, found {} after {}",
+                    rs.header.id as u8, last_id
+                ));
+            }
+            last_id = rs.header.id as u8;
+        }
 
-fn parse_sections(input: &[u8]) -> IResult<&[u8], Vec<Section<'_>>> {
-    let mut sections = Vec::new();
-    let mut remaining_input = input;
+        let mut module = Module::default();
 
-    while !remaining_input.is_empty() {
-        let (input, section) = parse_section(remaining_input)?;
-        sections.push(section);
-        remaining_input = input;
-    }
-
-    Ok((remaining_input, sections))
-}
-
-fn parse_section(input: &[u8]) -> IResult<&[u8], Section<'_>> {
-    let (input, header) = parse_section_header(input)?;
-    let (input, payload) = nom::bytes::complete::take(header.payload_length)(input)?;
-    let section = Section::Unknown(RawSection { header, payload });
-    Ok((input, section))
-}
-
-fn parse_section_header(input: &[u8]) -> IResult<&[u8], SectionHeader> {
-    let (input, id) = nom::bytes::complete::take(1usize)(input)?;
-    let (input, payload_length) = parse_varuint32(input)?;
-
-    Ok((
-        input,
-        SectionHeader {
-            id: id[0],
-            payload_length,
-        },
-    ))
-}
-
-#[cfg(test)]
-mod tests {
-
-    use super::*;
-
-    #[test]
-    fn test_parse_magic() {
-        let input = b"\0asm";
-        let result = parse_magic(input);
-        assert_eq!(result, Ok((&b""[..], b"\0asm")));
-    }
-
-    #[test]
-    fn test_parse_magic_fails() {
-        let input = b"\0as";
-        let result = parse_magic(input);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_parse_version() {
-        let input = &[0x01, 0x00, 0x00, 0x00];
-        let result = parse_version(input);
-        assert_eq!(result, Ok((&b""[..], 1)));
-    }
-    #[test]
-    fn test_parse_version_fails() {
-        let input = &[0x01, 0x00, 0x00];
-        let result = parse_version(input);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_parse_module() {
-        let input = b"\0asm\x01\x00\x00\x00";
-        let result = parse_module(input);
-        assert_eq!(
-            result,
-            Ok((
-                &b""[..],
-                Module {
-                    magic: *b"\0asm",
-                    version: 1,
-                    sections: Vec::new(),
+        for rs in raw.sections {
+            match rs.header.id {
+                SectionID::Type => {
+                    assign_once(&mut module.type_section, rs.try_into()?)?;
                 }
-            ))
-        );
+                _ => {
+                    // Handle other sections as needed
+                    // For now, we will just ignore them
+                    // You can implement further logic to handle other sections
+                }
+            }
+        }
+        Ok(module)
     }
+}
+
+fn assign_once<T>(slot: &mut Option<T>, val: T) -> Result<(), String> {
+    if slot.is_some() {
+        return Err("Duplicate Section".to_string());
+    }
+    *slot = Some(val);
+    Ok(())
 }
