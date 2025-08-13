@@ -1,7 +1,7 @@
 pub mod section;
 pub mod types;
 
-use section::TypeSection;
+pub use section::TypeSection;
 
 #[derive(Debug, PartialEq, Eq, Default)]
 pub struct Module {
