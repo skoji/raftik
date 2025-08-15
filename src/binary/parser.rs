@@ -5,7 +5,7 @@ mod section;
 mod types;
 
 use super::raw_module::{RawSection, SectionID};
-use crate::ast::{Module, Section, TypeSection};
+use crate::ast::{Module, Section};
 use raw_module::parse_raw_module;
 
 impl TryFrom<&[u8]> for Module {
@@ -39,7 +39,7 @@ impl TryFrom<&[u8]> for Module {
         for rs in raw.sections {
             match rs.header.id {
                 SectionID::Type => {
-                    let type_section: TypeSection = rs.try_into()?;
+                    let type_section = rs.try_into()?;
                     module.sections.push(Section::Type(type_section));
                 }
                 _ => {
