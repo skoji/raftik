@@ -41,8 +41,43 @@ impl TryFrom<u8> for ValueType {
     }
 }
 
+impl TryFrom<u8> for ReferenceType {
+    type Error = &'static str;
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x70 => Ok(ReferenceType::FuncRef),
+            0x6F => Ok(ReferenceType::ExternRef),
+            _ => Err("Invalid ReferenceType"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FunctionType {
     pub params: Vec<ValueType>,
     pub results: Vec<ValueType>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LimitType {
+    pub min: u32,
+    pub max: Option<u32>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TableType {
+    pub ref_type: ReferenceType,
+    pub limit: LimitType,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Mutability {
+    Const,
+    Var,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GlobalType {
+    pub val_type: ValueType,
+    pub mutability: Mutability,
 }
