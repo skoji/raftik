@@ -144,8 +144,8 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_limits_failes() {
-        let input1 = [0x02, 0x01]; // Invalid tag for
+    fn test_parse_limits_fails() {
+        let input1 = [0x02, 0x01]; // Invalid tag for limits
         let result1 = parse_limits(&input1);
         assert!(result1.is_err());
     }
