@@ -1,5 +1,5 @@
 use super::integer::parse_varuint32;
-use crate::ast::types::{FunctionType, Limits, ReferenceType, ValueType};
+use crate::ast::types::{FunctionType, Limits, ReferenceType, TableType, ValueType};
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::combinator::map;
@@ -43,6 +43,14 @@ pub fn parse_limits(input: &[u8]) -> IResult<&[u8], Limits> {
             },
         ),
     ))
+    .parse(input)
+}
+
+pub fn parse_table_type(input: &[u8]) -> IResult<&[u8], TableType> {
+    map(
+        (parse_reference_type, parse_limits),
+        |(ref_type, limits)| TableType { ref_type, limits },
+    )
     .parse(input)
 }
 
@@ -118,5 +126,16 @@ mod tests {
         let input1 = [0x02, 0x01]; // Invalid tag for
         let result1 = parse_limits(&input1);
         assert!(result1.is_err());
+    }
+
+    #[test]
+    fn test_parse_table_type() {
+        let input = [0x70, 0x00, 0x01];
+        let expected = TableType {
+            ref_type: ReferenceType::FuncRef,
+            limits: Limits { min: 1, max: None },
+        };
+        let result = parse_table_type(&input);
+        assert_eq!(result, Ok((&[][..], expected)));
     }
 }
