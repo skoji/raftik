@@ -1,13 +1,16 @@
 use super::integer::parse_varuint32;
-use crate::ast::types::{FunctionType, Limits, ReferenceType, TableType, ValueType};
+use crate::ast::types::{
+    FunctionType, GlobalType, Limits, Mutability, ReferenceType, TableType, ValueType,
+};
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::combinator::map;
 use nom::multi::length_count;
+use nom::number::complete::u8;
 use nom::{IResult, Parser};
 
 pub fn parse_value_type(input: &[u8]) -> IResult<&[u8], ValueType> {
-    let (input, value_type_byte) = nom::number::complete::u8(input)?;
+    let (input, value_type_byte) = u8(input)?;
     let value_type: ValueType = value_type_byte.try_into().map_err(|_| {
         nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::IsNot))
     })?;
@@ -50,6 +53,25 @@ pub fn parse_table_type(input: &[u8]) -> IResult<&[u8], TableType> {
     map(
         (parse_reference_type, parse_limits),
         |(ref_type, limits)| TableType { ref_type, limits },
+    )
+    .parse(input)
+}
+
+pub fn parse_mutability(input: &[u8]) -> IResult<&[u8], Mutability> {
+    alt((
+        map(tag(&[0x00][..]), |_| Mutability::Const),
+        map(tag(&[0x01][..]), |_| Mutability::Var),
+    ))
+    .parse(input)
+}
+
+pub fn parse_global_type(input: &[u8]) -> IResult<&[u8], GlobalType> {
+    map(
+        (parse_value_type, parse_mutability),
+        |(val_type, mutability)| GlobalType {
+            val_type,
+            mutability,
+        },
     )
     .parse(input)
 }
@@ -136,6 +158,17 @@ mod tests {
             limits: Limits { min: 1, max: None },
         };
         let result = parse_table_type(&input);
+        assert_eq!(result, Ok((&[][..], expected)));
+    }
+
+    #[test]
+    fn test_parse_global_type() {
+        let input = [0x7f, 0x01]; // I32 with Var mutability
+        let expected = GlobalType {
+            val_type: ValueType::Number(NumberType::I32),
+            mutability: Mutability::Var,
+        };
+        let result = parse_global_type(&input);
         assert_eq!(result, Ok((&[][..], expected)));
     }
 }

@@ -76,6 +76,18 @@ pub enum Mutability {
     Var,
 }
 
+impl TryFrom<u8> for Mutability {
+    type Error = &'static str;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x00 => Ok(Mutability::Const),
+            0x01 => Ok(Mutability::Var),
+            _ => Err("Invalid Mutability"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GlobalType {
     pub val_type: ValueType,
