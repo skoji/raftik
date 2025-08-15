@@ -1,6 +1,8 @@
 use super::integer::parse_varuint32;
-use crate::ast::types::{FunctionType, ReferenceType, ValueType};
+use crate::ast::types::{FunctionType, Limits, ReferenceType, ValueType};
+use nom::branch::alt;
 use nom::bytes::complete::tag;
+use nom::combinator::map;
 use nom::multi::length_count;
 use nom::{IResult, Parser};
 
@@ -25,6 +27,23 @@ pub fn parse_reference_type(input: &[u8]) -> IResult<&[u8], ReferenceType> {
         nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::IsNot))
     })?;
     Ok((input, ref_type))
+}
+
+pub fn parse_limits(input: &[u8]) -> IResult<&[u8], Limits> {
+    alt((
+        map((tag(&[0x00][..]), parse_varuint32), |(_, min)| Limits {
+            min,
+            max: None,
+        }),
+        map(
+            (tag(&[0x01][..]), parse_varuint32, parse_varuint32),
+            |(_, min, max)| Limits {
+                min,
+                max: Some(max),
+            },
+        ),
+    ))
+    .parse(input)
 }
 
 #[cfg(test)]
@@ -76,5 +95,28 @@ mod tests {
             let result = parse_reference_type(&input);
             assert_eq!(result, Ok((&[][..], expected_ref_type)));
         }
+    }
+
+    #[test]
+    fn test_parse_limits() {
+        let input1 = [0x00, 0x01];
+        let expected1 = Limits { min: 1, max: None };
+        let result1 = parse_limits(&input1);
+        assert_eq!(result1, Ok((&[][..], expected1)));
+
+        let input2 = [0x01, 0x02, 0x03];
+        let expected2 = Limits {
+            min: 2,
+            max: Some(3),
+        };
+        let result2 = parse_limits(&input2);
+        assert_eq!(result2, Ok((&[][..], expected2)));
+    }
+
+    #[test]
+    fn test_parse_limits_failes() {
+        let input1 = [0x02, 0x01]; // Invalid tag for
+        let result1 = parse_limits(&input1);
+        assert!(result1.is_err());
     }
 }

@@ -59,7 +59,7 @@ pub struct FunctionType {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LimitType {
+pub struct Limits {
     pub min: u32,
     pub max: Option<u32>,
 }
@@ -67,7 +67,7 @@ pub struct LimitType {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TableType {
     pub ref_type: ReferenceType,
-    pub limit: LimitType,
+    pub limit: Limits,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
