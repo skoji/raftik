@@ -1,6 +1,6 @@
 use super::integer::parse_varuint32;
 use crate::ast::types::{
-    FunctionType, GlobalType, Limits, Mutability, ReferenceType, TableType, ValueType,
+    FunctionType, GlobalType, Limits, MemoryType, Mutability, ReferenceType, TableType, ValueType,
 };
 use nom::branch::alt;
 use nom::bytes::complete::tag;
@@ -47,6 +47,10 @@ pub fn parse_limits(input: &[u8]) -> IResult<&[u8], Limits> {
         ),
     ))
     .parse(input)
+}
+
+pub fn parse_memory_type(input: &[u8]) -> IResult<&[u8], MemoryType> {
+    map(parse_limits, |limits| MemoryType { limits }).parse(input)
 }
 
 pub fn parse_table_type(input: &[u8]) -> IResult<&[u8], TableType> {

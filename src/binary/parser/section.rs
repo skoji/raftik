@@ -1,7 +1,7 @@
 use super::RawSection;
 use super::integer::parse_varuint32;
 use super::name::parse_name;
-use super::types::{parse_function_type, parse_global_type, parse_limits, parse_table_type};
+use super::types::{parse_function_type, parse_global_type, parse_memory_type, parse_table_type};
 use crate::ast::section::{Import, ImportDesc, ImportSection, TypeSection};
 use crate::binary::raw_module::SectionID;
 use nom::Parser;
@@ -54,8 +54,8 @@ fn parse_import_desc(input: &[u8]) -> nom::IResult<&[u8], ImportDesc> {
         map((tag(&[0x01][..]), parse_table_type), |(_, table_type)| {
             ImportDesc::Table(table_type)
         }),
-        map((tag(&[0x02][..]), parse_limits), |(_, limits)| {
-            ImportDesc::Memory(limits)
+        map((tag(&[0x02][..]), parse_memory_type), |(_, memory_type)| {
+            ImportDesc::Memory(memory_type)
         }),
         map((tag(&[0x03][..]), parse_global_type), |(_, global_type)| {
             ImportDesc::Global(global_type)
