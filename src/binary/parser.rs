@@ -43,6 +43,10 @@ impl TryFrom<&[u8]> for Module {
                     let type_section = rs.try_into()?;
                     module.sections.push(Section::Type(type_section));
                 }
+                SectionID::Import => {
+                    let import_section = rs.try_into()?;
+                    module.sections.push(Section::Import(import_section));
+                }
                 _ => {
                     // Handle other sections as needed
                     // For now, we will just ignore them
@@ -56,8 +60,9 @@ impl TryFrom<&[u8]> for Module {
 
 #[cfg(test)]
 mod tests {
+    use crate::ast::section::{Import, ImportDesc};
     use crate::ast::types::*;
-    use crate::ast::{Module, Section, TypeSection};
+    use crate::ast::{ImportSection, Module, Section, TypeSection};
     #[test]
     fn test_minimal_wasm() {
         let wasm = wat::parse_str("(module)").unwrap();
@@ -82,6 +87,34 @@ mod tests {
                     }]
                 })]
             }
+        );
+    }
+
+    #[test]
+    fn test_wasm_with_import_section() {
+        let wasm = wat::parse_str("(module (import \"console\" \"log\" (func $log (param i32))))")
+            .unwrap();
+        let module = Module::try_from(wasm.as_ref()).unwrap();
+        // type section and import section exists.
+        assert_eq!(module.sections.len(), 2);
+        assert_eq!(
+            module.sections[0],
+            Section::Type(TypeSection {
+                types: vec![FunctionType {
+                    params: vec![ValueType::Number(NumberType::I32)],
+                    results: vec![]
+                }]
+            })
+        );
+        assert_eq!(
+            module.sections[1],
+            Section::Import(ImportSection {
+                imports: vec![Import {
+                    module: "console".to_string(),
+                    name: "log".to_string(),
+                    desc: ImportDesc::TypeIndex(0)
+                }]
+            })
         );
     }
 }
