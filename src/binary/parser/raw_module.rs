@@ -1,71 +1,54 @@
 use super::integer::parse_varuint32;
 use crate::binary::raw_module::{RawModule, RawSection, SectionHeader, SectionID};
-use nom::{IResult, bytes::complete::tag, number::complete::le_u32};
+use nom::{
+    IResult, Parser, bytes::complete::tag, combinator::flat_map, combinator::map,
+    combinator::map_res, multi::many0, number::complete::le_u32,
+};
 
 pub fn parse_raw_module(input: &[u8]) -> IResult<&[u8], RawModule<'_>> {
-    let (input, magic) = parse_magic(input)?;
-    let (input, version) = parse_version(input)?;
-    let (input, sections) = parse_raw_sections(input)?;
-    let module = RawModule {
-        magic: *magic,
-        version,
-        sections,
-    };
-
-    Ok((input, module))
+    map(
+        (parse_magic, parse_version, parse_raw_sections),
+        |(magic, version, sections)| RawModule {
+            magic: *magic,
+            version,
+            sections,
+        },
+    )
+    .parse(input)
 }
 
 fn parse_magic(input: &[u8]) -> IResult<&[u8], &[u8; 4]> {
-    let (input, magic) = tag(&b"\0asm"[..])(input)?;
-    Ok((
-        input,
-        magic
-            .try_into()
-            .expect("tag ensures slice is exactly 4 bytes long"),
-    ))
+    map_res(tag(&b"\0asm"[..]), |magic: &[u8]| magic.try_into()).parse(input)
 }
 
 fn parse_version(input: &[u8]) -> IResult<&[u8], u32> {
-    let (input, version) = le_u32(input)?;
-    Ok((input, version))
+    le_u32(input)
 }
 
 fn parse_raw_sections(input: &[u8]) -> IResult<&[u8], Vec<RawSection<'_>>> {
-    let mut sections = Vec::new();
-    let mut remaining_input = input;
-
-    while !remaining_input.is_empty() {
-        let (input, section) = parse_raw_section(remaining_input)?;
-        sections.push(section);
-        remaining_input = input;
-    }
-
-    Ok((remaining_input, sections))
+    many0(parse_raw_section).parse(input)
 }
 
 fn parse_raw_section(input: &[u8]) -> IResult<&[u8], RawSection<'_>> {
-    let (input, header) = parse_section_header(input)?;
-    let (input, payload) = nom::bytes::complete::take(header.payload_length)(input)?;
-    let section = RawSection { header, payload };
-    Ok((input, section))
+    flat_map(parse_section_header, |header| {
+        map(
+            nom::bytes::complete::take(header.payload_length),
+            move |payload| RawSection { header, payload },
+        )
+    })
+    .parse(input)
 }
 
 fn parse_section_header(input: &[u8]) -> IResult<&[u8], SectionHeader> {
-    let (input, id) = parse_section_id(input)?;
-    let (input, payload_length) = parse_varuint32(input)?;
-
-    Ok((input, SectionHeader { id, payload_length }))
+    map(
+        (parse_section_id, parse_varuint32),
+        |(id, payload_length)| SectionHeader { id, payload_length },
+    )
+    .parse(input)
 }
 
 fn parse_section_id(input: &[u8]) -> IResult<&[u8], SectionID> {
-    let (input, id_byte) = nom::number::complete::u8(input)?;
-    match SectionID::try_from(id_byte) {
-        Ok(id) => Ok((input, id)),
-        Err(_) => Err(nom::Err::Error(nom::error::Error::new(
-            input,
-            nom::error::ErrorKind::Alt,
-        ))),
-    }
+    map_res(nom::number::complete::u8, SectionID::try_from).parse(input)
 }
 
 #[cfg(test)]
