@@ -1,5 +1,5 @@
 use super::integer::parse_varuint32;
-use crate::ast::types::{FunctionType, ValueType};
+use crate::ast::types::{FunctionType, ReferenceType, ValueType};
 use nom::bytes::complete::tag;
 use nom::multi::length_count;
 use nom::{IResult, Parser};
@@ -17,6 +17,14 @@ pub fn parse_function_type(i: &[u8]) -> IResult<&[u8], FunctionType> {
     let (i, params) = length_count(parse_varuint32, parse_value_type).parse(i)?;
     let (i, results) = length_count(parse_varuint32, parse_value_type).parse(i)?;
     Ok((i, FunctionType { params, results }))
+}
+
+pub fn parse_reference_type(input: &[u8]) -> IResult<&[u8], ReferenceType> {
+    let (input, ref_type_byte) = nom::number::complete::u8(input)?;
+    let ref_type = ref_type_byte.try_into().map_err(|_| {
+        nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::IsNot))
+    })?;
+    Ok((input, ref_type))
 }
 
 #[cfg(test)]
@@ -55,5 +63,18 @@ mod tests {
         };
         let result = parse_function_type(&input);
         assert_eq!(result, Ok((&[][..], expected)));
+    }
+
+    #[test]
+    fn test_parse_reference_type() {
+        let test_cases = vec![
+            (0x70, ReferenceType::FuncRef),
+            (0x6f, ReferenceType::ExternRef),
+        ];
+        for (input_byte, expected_ref_type) in test_cases {
+            let input = [input_byte];
+            let result = parse_reference_type(&input);
+            assert_eq!(result, Ok((&[][..], expected_ref_type)));
+        }
     }
 }
