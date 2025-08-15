@@ -77,9 +77,9 @@ mod tests {
                             ValueType::Number(NumberType::I32),
                             ValueType::Number(NumberType::I32)
                         ],
-                        results: vec![ValueType::Number(NumberType::I64)],
-                    }],
-                }),]
+                        results: vec![ValueType::Number(NumberType::I64)]
+                    }]
+                })]
             }
         );
     }
