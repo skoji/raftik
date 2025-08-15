@@ -1,5 +1,6 @@
 mod integer;
 mod leb128;
+mod name;
 mod raw_module;
 mod section;
 mod types;
