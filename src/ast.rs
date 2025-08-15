@@ -1,9 +1,9 @@
 pub mod section;
 pub mod types;
 
-pub use section::TypeSection;
+pub use section::{Section, TypeSection};
 
 #[derive(Debug, PartialEq, Eq, Default)]
 pub struct Module {
-    pub type_section: Option<TypeSection>,
+    pub sections: Vec<Section>,
 }
