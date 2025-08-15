@@ -5,7 +5,7 @@ mod section;
 mod types;
 
 use super::raw_module::{RawSection, SectionID};
-use crate::ast::Module;
+use crate::ast::{Module, Section};
 use raw_module::parse_raw_module;
 
 impl TryFrom<&[u8]> for Module {
@@ -39,7 +39,8 @@ impl TryFrom<&[u8]> for Module {
         for rs in raw.sections {
             match rs.header.id {
                 SectionID::Type => {
-                    assign_once(&mut module.type_section, rs.try_into()?)?;
+                    let type_section = rs.try_into()?;
+                    module.sections.push(Section::Type(type_section));
                 }
                 _ => {
                     // Handle other sections as needed
@@ -52,18 +53,10 @@ impl TryFrom<&[u8]> for Module {
     }
 }
 
-fn assign_once<T>(slot: &mut Option<T>, val: T) -> Result<(), String> {
-    if slot.is_some() {
-        return Err("Duplicate Section".to_string());
-    }
-    *slot = Some(val);
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use crate::ast::types::*;
-    use crate::ast::{Module, TypeSection};
+    use crate::ast::{Module, Section, TypeSection};
     #[test]
     fn test_minimal_wasm() {
         let wasm = wat::parse_str("(module)").unwrap();
@@ -78,15 +71,15 @@ mod tests {
         assert_eq!(
             module,
             Module {
-                type_section: Some(TypeSection {
+                sections: vec![Section::Type(TypeSection {
                     types: vec![FunctionType {
                         params: vec![
                             ValueType::Number(NumberType::I32),
                             ValueType::Number(NumberType::I32)
                         ],
-                        results: vec![ValueType::Number(NumberType::I64)],
+                        results: vec![ValueType::Number(NumberType::I64)]
                     }]
-                })
+                })]
             }
         );
     }
