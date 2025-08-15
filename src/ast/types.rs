@@ -65,6 +65,11 @@ pub struct Limits {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MemoryType {
+    pub limits: Limits,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TableType {
     pub ref_type: ReferenceType,
     pub limits: Limits,
