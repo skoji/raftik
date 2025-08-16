@@ -1,11 +1,11 @@
 use super::integer::parse_varuint32;
 use nom::bytes::complete::take;
+use nom::combinator::flat_map;
 use nom::combinator::map_res;
 use nom::{IResult, Parser};
 
 pub fn parse_name(i: &[u8]) -> IResult<&[u8], String> {
-    let (i, size) = parse_varuint32(i)?;
-    map_res(take(size), |b: &[u8]| {
+    map_res(flat_map(parse_varuint32, take), |b: &[u8]| {
         std::str::from_utf8(b).map(|s| s.to_string())
     })
     .parse(i)

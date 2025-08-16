@@ -5,6 +5,7 @@ use crate::ast::types::{
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::combinator::map;
+use nom::combinator::map_res;
 use nom::multi::length_count;
 use nom::number::complete::u8;
 use nom::{IResult, Parser};
@@ -17,19 +18,20 @@ pub fn parse_value_type(input: &[u8]) -> IResult<&[u8], ValueType> {
     Ok((input, value_type))
 }
 
-pub fn parse_function_type(i: &[u8]) -> IResult<&[u8], FunctionType> {
-    let (i, _) = tag(&[0x60u8][..])(i)?;
-    let (i, params) = length_count(parse_varuint32, parse_value_type).parse(i)?;
-    let (i, results) = length_count(parse_varuint32, parse_value_type).parse(i)?;
-    Ok((i, FunctionType { params, results }))
+pub fn parse_function_type(input: &[u8]) -> IResult<&[u8], FunctionType> {
+    map(
+        (
+            tag(&[0x60u8][..]),
+            length_count(parse_varuint32, parse_value_type),
+            length_count(parse_varuint32, parse_value_type),
+        ),
+        |(_, params, results)| FunctionType { params, results },
+    )
+    .parse(input)
 }
 
 pub fn parse_reference_type(input: &[u8]) -> IResult<&[u8], ReferenceType> {
-    let (input, ref_type_byte) = nom::number::complete::u8(input)?;
-    let ref_type = ref_type_byte.try_into().map_err(|_| {
-        nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::IsNot))
-    })?;
-    Ok((input, ref_type))
+    map_res(u8, |byte| byte.try_into()).parse(input)
 }
 
 pub fn parse_limits(input: &[u8]) -> IResult<&[u8], Limits> {
