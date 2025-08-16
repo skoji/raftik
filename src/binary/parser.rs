@@ -48,6 +48,10 @@ impl TryFrom<&[u8]> for Module {
                     let import_section = rs.try_into()?;
                     module.sections.push(Section::Import(import_section));
                 }
+                SectionID::Function => {
+                    let function_section = rs.try_into()?;
+                    module.sections.push(Section::Function(function_section));
+                }
                 _ => {
                     // Handle other sections as needed
                     // For now, we will just ignore them
@@ -62,7 +66,7 @@ impl TryFrom<&[u8]> for Module {
 #[cfg(test)]
 mod tests {
     use crate::ast::{
-        ImportSection, Module, Section, TypeSection,
+        FunctionSection, ImportSection, Module, Section, TypeSection,
         section::{Import, ImportDesc},
         types::*,
     };
@@ -117,6 +121,28 @@ mod tests {
                     name: "log".to_string(),
                     desc: ImportDesc::TypeIndex(TypeIndex { index: 0 })
                 }]
+            })
+        );
+    }
+    #[test]
+    fn test_wasm_with_function_section() {
+        let wasm =
+            wat::parse_str("(module (func (param $l i32) (result i32) local.get $l))").unwrap();
+        let module = Module::try_from(wasm.as_ref()).unwrap();
+        assert_eq!(module.sections.len(), 2); // should be 3, but for the present code section is not implemented yet
+        assert_eq!(
+            module.sections[0],
+            Section::Type(TypeSection {
+                types: vec![FunctionType {
+                    params: vec![ValueType::Number(NumberType::I32)],
+                    results: vec![ValueType::Number(NumberType::I32)]
+                }]
+            })
+        );
+        assert_eq!(
+            module.sections[1],
+            Section::Function(FunctionSection {
+                type_indexes: vec![TypeIndex { index: 0 }]
             })
         );
     }

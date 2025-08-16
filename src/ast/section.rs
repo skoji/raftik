@@ -4,6 +4,7 @@ use crate::ast::types::{FunctionType, GlobalType, MemoryType, TableType, TypeInd
 pub enum Section {
     Type(TypeSection),
     Import(ImportSection),
+    Function(FunctionSection),
     // Other section coming
 }
 
@@ -30,4 +31,9 @@ pub enum ImportDesc {
     Table(TableType),
     Memory(MemoryType),
     Global(GlobalType),
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct FunctionSection {
+    pub type_indexes: Vec<TypeIndex>,
 }
