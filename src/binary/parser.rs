@@ -1,63 +1,35 @@
 mod integer;
 mod leb128;
+mod module;
 mod name;
-mod raw_module;
-mod section;
+mod section_parser_trait;
 mod types;
 
-use raw_module::parse_raw_module;
+use module::parse_module;
 
-use super::raw_module::{RawSection, SectionID};
-use crate::ast::{Module, Section};
+use crate::ast::Module;
 
-impl TryFrom<&[u8]> for Module {
+impl<'a> TryFrom<&'a [u8]> for Module<'a> {
     type Error = String;
 
-    fn try_from(input: &[u8]) -> Result<Self, Self::Error> {
-        let (remaining, raw) =
-            parse_raw_module(input).map_err(|e| format!("Failed to parse raw module: {}", e))?;
-
-        if !remaining.is_empty() {
-            return Err("Extra data after module".to_string());
-        }
-
-        // check id order
+    fn try_from(input: &'a [u8]) -> Result<Self, Self::Error> {
+        let (_, module) =
+            parse_module(input).map_err(|e| format!("Failed to parse module: {:?}", e))?;
+        // check section order
         let mut last_id = 0u8;
-        for rs in &raw.sections {
-            if rs.header.id == SectionID::Custom {
-                continue; // Custom sections are not checked for ID order
+        for s in &module.sections {
+            let id = s.id() as u8;
+            if id == 0 {
+                continue;
             }
-            if rs.header.id as u8 <= last_id {
+            if id <= last_id {
                 return Err(format!(
-                    "Section IDs must be in ascending order, found {} after {}",
-                    rs.header.id as u8, last_id
+                    "Sections are not in the correct order: {:?} < {:?}",
+                    s.id(),
+                    last_id
                 ));
             }
-            last_id = rs.header.id as u8;
-        }
-
-        let mut module = Module::default();
-
-        for rs in raw.sections {
-            match rs.header.id {
-                SectionID::Type => {
-                    let type_section = rs.try_into()?;
-                    module.sections.push(Section::Type(type_section));
-                }
-                SectionID::Import => {
-                    let import_section = rs.try_into()?;
-                    module.sections.push(Section::Import(import_section));
-                }
-                SectionID::Function => {
-                    let function_section = rs.try_into()?;
-                    module.sections.push(Section::Function(function_section));
-                }
-                _ => {
-                    // Handle other sections as needed
-                    // For now, we will just ignore them
-                    // You can implement further logic to handle other sections
-                }
-            }
+            last_id = id;
         }
         Ok(module)
     }
@@ -103,7 +75,7 @@ mod tests {
             .unwrap();
         let module = Module::try_from(wasm.as_ref()).unwrap();
         // type section and import section exists.
-        assert_eq!(module.sections.len(), 2);
+        assert_eq!(module.sections.len(), 3);
         assert_eq!(
             module.sections[0],
             Section::Type(TypeSection {
@@ -129,7 +101,7 @@ mod tests {
         let wasm =
             wat::parse_str("(module (func (param $l i32) (result i32) local.get $l))").unwrap();
         let module = Module::try_from(wasm.as_ref()).unwrap();
-        assert_eq!(module.sections.len(), 2); // should be 3, but for the present code section is not implemented yet
+        assert_eq!(module.sections.len(), 4);
         assert_eq!(
             module.sections[0],
             Section::Type(TypeSection {

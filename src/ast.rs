@@ -4,6 +4,6 @@ pub mod types;
 pub use section::{FunctionSection, ImportSection, Section, TypeSection};
 
 #[derive(Debug, PartialEq, Eq, Default)]
-pub struct Module {
-    pub sections: Vec<Section>,
+pub struct Module<'a> {
+    pub sections: Vec<Section<'a>>,
 }
