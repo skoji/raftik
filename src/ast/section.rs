@@ -42,6 +42,6 @@ pub struct FunctionSection {
 // will be removed all section parser is implemented.
 #[derive(Debug, PartialEq, Eq)]
 pub struct UnknownSection<'a> {
-    pub id: u32,
+    pub id: u8,
     pub payload: &'a [u8],
 }
