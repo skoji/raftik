@@ -1,10 +1,11 @@
 use crate::ast::types::{FunctionType, GlobalType, MemoryType, TableType, TypeIndex};
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum Section {
+pub enum Section<'a> {
     Type(TypeSection),
     Import(ImportSection),
     Function(FunctionSection),
+    Unknown(UnknownSection<'a>),
     // Other section coming
 }
 
@@ -36,4 +37,11 @@ pub enum ImportDesc {
 #[derive(Debug, PartialEq, Eq)]
 pub struct FunctionSection {
     pub type_indexes: Vec<TypeIndex>,
+}
+
+// will be removed all section parser is implemented.
+#[derive(Debug, PartialEq, Eq)]
+pub struct UnknownSection<'a> {
+    pub id: u32,
+    pub payload: &'a [u8],
 }
