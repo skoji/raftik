@@ -18,7 +18,10 @@ pub fn parse_raw_module(input: &[u8]) -> IResult<&[u8], RawModule<'_>> {
 }
 
 fn parse_magic(input: &[u8]) -> IResult<&[u8], &[u8; 4]> {
-    map_res(tag(&b"\0asm"[..]), |magic: &[u8]| magic.try_into()).parse(input)
+    map(tag(&b"\0asm"[..]), |magic: &[u8]| {
+        magic.try_into().expect("magic should be exactly 4 bytes")
+    })
+    .parse(input)
 }
 
 fn parse_version(input: &[u8]) -> IResult<&[u8], u32> {
