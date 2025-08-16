@@ -1,7 +1,9 @@
-use super::leb128::{Leb128Err, decode_sleb128_i64, decode_uleb128_u64};
+use nom::{
+    Err as NomErr, IResult,
+    error::{ErrorKind, ParseError},
+};
 
-use nom::error::{ErrorKind, ParseError};
-use nom::{Err as NomErr, IResult};
+use super::leb128::{Leb128Err, decode_sleb128_i64, decode_uleb128_u64};
 
 const MAX_BYTES_32: usize = 5; // ceil(32/7)
 const MAX_BYTES_64: usize = 10; // ceil(64/7)

@@ -1,9 +1,13 @@
+use nom::{
+    IResult, Parser,
+    bytes::complete::tag,
+    combinator::{flat_map, map, map_res},
+    multi::many0,
+    number::complete::le_u32,
+};
+
 use super::integer::parse_varuint32;
 use crate::binary::raw_module::{RawModule, RawSection, SectionHeader, SectionID};
-use nom::{
-    IResult, Parser, bytes::complete::tag, combinator::flat_map, combinator::map,
-    combinator::map_res, multi::many0, number::complete::le_u32,
-};
 
 pub fn parse_raw_module(input: &[u8]) -> IResult<&[u8], RawModule<'_>> {
     map(

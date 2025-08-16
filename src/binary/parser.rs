@@ -5,9 +5,10 @@ mod raw_module;
 mod section;
 mod types;
 
+use raw_module::parse_raw_module;
+
 use super::raw_module::{RawSection, SectionID};
 use crate::ast::{Module, Section};
-use raw_module::parse_raw_module;
 
 impl TryFrom<&[u8]> for Module {
     type Error = String;
@@ -60,9 +61,11 @@ impl TryFrom<&[u8]> for Module {
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::section::{Import, ImportDesc};
-    use crate::ast::types::*;
-    use crate::ast::{ImportSection, Module, Section, TypeSection};
+    use crate::ast::{
+        ImportSection, Module, Section, TypeSection,
+        section::{Import, ImportDesc},
+        types::*,
+    };
     #[test]
     fn test_minimal_wasm() {
         let wasm = wat::parse_str("(module)").unwrap();

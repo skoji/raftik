@@ -1,5 +1,6 @@
-use raftik::ast::Module;
 use std::env;
+
+use raftik::ast::Module;
 
 fn main() {
     let args: Vec<String> = env::args().collect();

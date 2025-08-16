@@ -1,14 +1,16 @@
+use nom::{
+    IResult, Parser,
+    branch::alt,
+    bytes::complete::tag,
+    combinator::{map, map_res},
+    multi::length_count,
+    number::complete::u8,
+};
+
 use super::integer::parse_varuint32;
 use crate::ast::types::{
     FunctionType, GlobalType, Limits, MemoryType, Mutability, ReferenceType, TableType, ValueType,
 };
-use nom::branch::alt;
-use nom::bytes::complete::tag;
-use nom::combinator::map;
-use nom::combinator::map_res;
-use nom::multi::length_count;
-use nom::number::complete::u8;
-use nom::{IResult, Parser};
 
 pub fn parse_value_type(input: &[u8]) -> IResult<&[u8], ValueType> {
     let (input, value_type_byte) = u8(input)?;

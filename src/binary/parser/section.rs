@@ -1,14 +1,15 @@
-use super::RawSection;
-use super::integer::parse_varuint32;
-use super::name::parse_name;
-use super::types::{parse_function_type, parse_global_type, parse_memory_type, parse_table_type};
-use crate::ast::section::{Import, ImportDesc, ImportSection, TypeSection};
-use crate::binary::raw_module::SectionID;
-use nom::Parser;
-use nom::branch::alt;
-use nom::bytes::complete::tag;
-use nom::combinator::map;
-use nom::multi::length_count;
+use nom::{Parser, branch::alt, bytes::complete::tag, combinator::map, multi::length_count};
+
+use super::{
+    RawSection,
+    integer::parse_varuint32,
+    name::parse_name,
+    types::{parse_function_type, parse_global_type, parse_memory_type, parse_table_type},
+};
+use crate::{
+    ast::section::{Import, ImportDesc, ImportSection, TypeSection},
+    binary::raw_module::SectionID,
+};
 
 impl<'a> TryFrom<RawSection<'a>> for TypeSection {
     type Error = String;

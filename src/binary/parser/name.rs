@@ -1,8 +1,10 @@
+use nom::{
+    IResult, Parser,
+    bytes::complete::take,
+    combinator::{flat_map, map_res},
+};
+
 use super::integer::parse_varuint32;
-use nom::bytes::complete::take;
-use nom::combinator::flat_map;
-use nom::combinator::map_res;
-use nom::{IResult, Parser};
 
 pub fn parse_name(i: &[u8]) -> IResult<&[u8], String> {
     map_res(flat_map(parse_varuint32, take), |b: &[u8]| {
