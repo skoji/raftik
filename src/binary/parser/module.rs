@@ -110,7 +110,7 @@ fn parse_section(input: &[u8]) -> IResult<&[u8], Section<'_>> {
         SectionID::Type => Section::Type(TypeSection::parse_all(payload)?),
         SectionID::Import => Section::Import(ImportSection::parse_all(payload)?),
         SectionID::Function => Section::Function(FunctionSection::parse_all(payload)?),
-        _ => Section::Unknown(UnknownSection { id: id, payload }),
+        _ => Section::Unknown(UnknownSection { id, payload }),
     };
     Ok((input, section))
 }
