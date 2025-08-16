@@ -59,6 +59,11 @@ pub struct FunctionType {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TypeIndex {
+    pub index: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Limits {
     pub min: u32,
     pub max: Option<u32>,

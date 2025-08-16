@@ -6,7 +6,10 @@ use super::{
     RawSection,
     integer::parse_varuint32,
     name::parse_name,
-    types::{parse_function_type, parse_global_type, parse_memory_type, parse_table_type},
+    types::{
+        parse_function_type, parse_global_type, parse_memory_type, parse_table_type,
+        parse_type_index,
+    },
 };
 use crate::{
     ast::section::{Import, ImportDesc, ImportSection, TypeSection},
@@ -51,7 +54,7 @@ fn parse_import(input: &[u8]) -> IResult<&[u8], Import> {
 
 fn parse_import_desc(input: &[u8]) -> IResult<&[u8], ImportDesc> {
     alt((
-        map((tag(&[0x00][..]), parse_varuint32), |(_, type_index)| {
+        map((tag(&[0x00][..]), parse_type_index), |(_, type_index)| {
             ImportDesc::TypeIndex(type_index)
         }),
         map((tag(&[0x01][..]), parse_table_type), |(_, table_type)| {

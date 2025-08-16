@@ -1,4 +1,4 @@
-use crate::ast::types::{FunctionType, GlobalType, MemoryType, TableType};
+use crate::ast::types::{FunctionType, GlobalType, MemoryType, TableType, TypeIndex};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Section {
@@ -26,7 +26,7 @@ pub struct Import {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ImportDesc {
-    TypeIndex(u32),
+    TypeIndex(TypeIndex),
     Table(TableType),
     Memory(MemoryType),
     Global(GlobalType),
