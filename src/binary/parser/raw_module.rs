@@ -1,9 +1,9 @@
 use nom::{
     IResult, Parser,
-    bytes::complete::tag,
+    bytes::complete::{tag, take},
     combinator::{flat_map, map, map_res},
     multi::many0,
-    number::complete::le_u32,
+    number::complete::{le_u32, u8},
 };
 
 use super::integer::parse_varuint32;
@@ -38,10 +38,10 @@ fn parse_raw_sections(input: &[u8]) -> IResult<&[u8], Vec<RawSection<'_>>> {
 
 fn parse_raw_section(input: &[u8]) -> IResult<&[u8], RawSection<'_>> {
     flat_map(parse_section_header, |header| {
-        map(
-            nom::bytes::complete::take(header.payload_length),
-            move |payload| RawSection { header, payload },
-        )
+        map(take(header.payload_length), move |payload| RawSection {
+            header,
+            payload,
+        })
     })
     .parse(input)
 }
@@ -55,7 +55,7 @@ fn parse_section_header(input: &[u8]) -> IResult<&[u8], SectionHeader> {
 }
 
 fn parse_section_id(input: &[u8]) -> IResult<&[u8], SectionID> {
-    map_res(nom::number::complete::u8, SectionID::try_from).parse(input)
+    map_res(u8, SectionID::try_from).parse(input)
 }
 
 #[cfg(test)]

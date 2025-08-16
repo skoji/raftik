@@ -1,4 +1,6 @@
-use nom::{Parser, branch::alt, bytes::complete::tag, combinator::map, multi::length_count};
+use nom::{
+    IResult, Parser, branch::alt, bytes::complete::tag, combinator::map, multi::length_count,
+};
 
 use super::{
     RawSection,
@@ -39,7 +41,7 @@ impl<'a> TryFrom<RawSection<'a>> for ImportSection {
     }
 }
 
-fn parse_import(input: &[u8]) -> nom::IResult<&[u8], Import> {
+fn parse_import(input: &[u8]) -> IResult<&[u8], Import> {
     map(
         (parse_name, parse_name, parse_import_desc),
         |(module, name, desc)| Import { module, name, desc },
@@ -47,7 +49,7 @@ fn parse_import(input: &[u8]) -> nom::IResult<&[u8], Import> {
     .parse(input)
 }
 
-fn parse_import_desc(input: &[u8]) -> nom::IResult<&[u8], ImportDesc> {
+fn parse_import_desc(input: &[u8]) -> IResult<&[u8], ImportDesc> {
     alt((
         map((tag(&[0x00][..]), parse_varuint32), |(_, type_index)| {
             ImportDesc::TypeIndex(type_index)
