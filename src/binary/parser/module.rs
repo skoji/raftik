@@ -16,15 +16,12 @@ use super::{
         parse_type_index,
     },
 };
-use crate::{
-    ast::{
-        Module,
-        section::{
-            FunctionSection, Import, ImportDesc, ImportSection, Section, TypeSection,
-            UnknownSection,
-        },
+use crate::ast::{
+    Module,
+    section::{
+        FunctionSection, Import, ImportDesc, ImportSection, Section, SectionID, TypeSection,
+        UnknownSection,
     },
-    binary::raw_module::SectionID,
 };
 
 pub fn parse_module(input: &'_ [u8]) -> IResult<&[u8], Module<'_>> {
