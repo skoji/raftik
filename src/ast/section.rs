@@ -92,7 +92,7 @@ impl Section<'_> {
             Section::Type(_) => SectionID::Type,
             Section::Import(_) => SectionID::Import,
             Section::Function(_) => SectionID::Function,
-            Section::Unknown(unkown) => unkown.id,
+            Section::Unknown(unknown) => unknown.id,
         }
     }
 }
