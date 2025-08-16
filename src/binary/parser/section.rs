@@ -12,7 +12,7 @@ use super::{
     },
 };
 use crate::{
-    ast::section::{Import, ImportDesc, ImportSection, TypeSection},
+    ast::section::{FunctionSection, Import, ImportDesc, ImportSection, TypeSection},
     binary::raw_module::SectionID,
 };
 
@@ -68,4 +68,18 @@ fn parse_import_desc(input: &[u8]) -> IResult<&[u8], ImportDesc> {
         }),
     ))
     .parse(input)
+}
+
+impl<'a> TryFrom<RawSection<'a>> for FunctionSection {
+    type Error = String;
+
+    fn try_from(raw: RawSection<'a>) -> Result<Self, Self::Error> {
+        if raw.header.id != SectionID::Function {
+            return Err("RawSection is not a FunctionSection".to_string());
+        }
+        let (_, type_indexes) = length_count(parse_varuint32, parse_type_index)
+            .parse(raw.payload)
+            .map_err(|e| format!("Failed to parse FunctionSection: {}", e))?;
+        Ok(FunctionSection { type_indexes })
+    }
 }
