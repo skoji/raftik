@@ -115,7 +115,7 @@ mod tests {
                 imports: vec![Import {
                     module: "console".to_string(),
                     name: "log".to_string(),
-                    desc: ImportDesc::TypeIndex(0)
+                    desc: ImportDesc::TypeIndex(TypeIndex { index: 0 })
                 }]
             })
         );
