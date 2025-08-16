@@ -15,6 +15,22 @@ impl<'a> TryFrom<&'a [u8]> for Module<'a> {
     fn try_from(input: &'a [u8]) -> Result<Self, Self::Error> {
         let (_, module) =
             parse_module(input).map_err(|e| format!("Failed to parse module: {:?}", e))?;
+        // check section order
+        let mut last_id = 0u8;
+        for s in &module.sections {
+            let id = s.id() as u8;
+            if id == 0 {
+                continue;
+            }
+            if id <= last_id {
+                return Err(format!(
+                    "Sections are not in the correct order: {:?} < {:?}",
+                    s.id(),
+                    last_id
+                ));
+            }
+            last_id = id;
+        }
         Ok(module)
     }
 }

@@ -42,7 +42,7 @@ pub struct FunctionSection {
 // will be removed all section parser is implemented.
 #[derive(Debug, PartialEq, Eq)]
 pub struct UnknownSection<'a> {
-    pub id: u8,
+    pub id: SectionID,
     pub payload: &'a [u8],
 }
 
@@ -82,6 +82,17 @@ impl TryFrom<u8> for SectionID {
             11 => Ok(Self::Data),
             12 => Ok(Self::DataCount),
             _ => Err(()),
+        }
+    }
+}
+
+impl Section<'_> {
+    pub fn id(&self) -> SectionID {
+        match self {
+            Section::Type(_) => SectionID::Type,
+            Section::Import(_) => SectionID::Import,
+            Section::Function(_) => SectionID::Function,
+            Section::Unknown(unkown) => unkown.id,
         }
     }
 }
