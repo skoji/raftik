@@ -39,10 +39,10 @@ impl<'a> TryFrom<&'a [u8]> for Module<'a> {
 #[cfg(test)]
 mod tests {
     use crate::ast::{
-        FunctionSection, GlobalSection, ImportSection, MemorySection, Module, Section,
-        TableSection, TypeSection,
+        ExportSection, FunctionSection, GlobalSection, ImportSection, MemorySection, Module,
+        Section, TableSection, TypeSection,
         instructions::*,
-        section::{Global, Import, ImportDesc},
+        section::{Export, ExportDesc, Global, Import, ImportDesc, SectionID},
         types::*,
     };
     #[test]
@@ -175,6 +175,26 @@ mod tests {
                     expression: Expression {
                         instructions: &[0x41, 0x20][..]
                     }
+                }]
+            })
+        )
+    }
+
+    #[test]
+    fn test_wasm_with_export_section() {
+        let wasm =
+            wat::parse_str("(module (func (export \"the_answer\") (result i32) i32.const 42))")
+                .unwrap();
+        let module = Module::try_from(wasm.as_ref()).unwrap();
+        assert_eq!(module.sections.len(), 4); // Type, Function, Export, Code
+        assert_eq!(module.sections[0].id(), SectionID::Type);
+        assert_eq!(module.sections[1].id(), SectionID::Function);
+        assert_eq!(
+            module.sections[2],
+            Section::Export(ExportSection {
+                exports: vec![Export {
+                    name: "the_answer".to_string(),
+                    desc: ExportDesc::FunctionIndex(0),
                 }]
             })
         )

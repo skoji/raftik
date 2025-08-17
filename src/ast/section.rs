@@ -11,6 +11,7 @@ pub enum Section<'a> {
     Table(TableSection),
     Memory(MemorySection),
     Global(GlobalSection<'a>),
+    Export(ExportSection),
     Unknown(UnknownSection<'a>),
     // Other section coming
 }
@@ -141,6 +142,7 @@ impl Section<'_> {
             Section::Table(_) => SectionID::Table,
             Section::Memory(_) => SectionID::Memory,
             Section::Global(_) => SectionID::Global,
+            Section::Export(_) => SectionID::Export,
             Section::Unknown(unknown) => unknown.id,
         }
     }
