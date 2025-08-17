@@ -12,6 +12,7 @@ pub enum Section<'a> {
     Memory(MemorySection),
     Global(GlobalSection<'a>),
     Export(ExportSection),
+    Start(StartSection),
     Unknown(UnknownSection<'a>),
     // Other section coming
 }
@@ -85,6 +86,10 @@ pub enum ExportDesc {
     MemoryIndex(u32),
     GlobalIndex(u32),
 }
+#[derive(Debug, PartialEq, Eq)]
+pub struct StartSection {
+    pub start_function_index: u32,
+}
 
 // will be removed all section parser is implemented.
 #[derive(Debug, PartialEq, Eq)]
@@ -143,6 +148,7 @@ impl Section<'_> {
             Section::Memory(_) => SectionID::Memory,
             Section::Global(_) => SectionID::Global,
             Section::Export(_) => SectionID::Export,
+            Section::Start(_) => SectionID::Start,
             Section::Unknown(unknown) => unknown.id,
         }
     }

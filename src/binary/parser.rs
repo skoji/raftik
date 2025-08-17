@@ -40,7 +40,7 @@ impl<'a> TryFrom<&'a [u8]> for Module<'a> {
 mod tests {
     use crate::ast::{
         ExportSection, FunctionSection, GlobalSection, ImportSection, MemorySection, Module,
-        Section, TableSection, TypeSection,
+        Section, StartSection, TableSection, TypeSection,
         instructions::*,
         section::{Export, ExportDesc, Global, Import, ImportDesc, SectionID},
         types::*,
@@ -198,5 +198,20 @@ mod tests {
                 }]
             })
         )
+    }
+
+    #[test]
+    fn test_wasm_with_start_section() {
+        let wasm = wat::parse_str("(module (func) (start 0))").unwrap();
+        let module = Module::try_from(wasm.as_ref()).unwrap();
+        assert_eq!(module.sections.len(), 4); // Type, Function, Start, Code
+        assert_eq!(module.sections[0].id(), SectionID::Type);
+        assert_eq!(module.sections[1].id(), SectionID::Function);
+        assert_eq!(
+            module.sections[2],
+            Section::Start(StartSection {
+                start_function_index: 0
+            })
+        );
     }
 }
