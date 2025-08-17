@@ -6,6 +6,7 @@ pub enum Section<'a> {
     Import(ImportSection),
     Function(FunctionSection),
     Table(TableSection),
+    Memory(MemorySection),
     Unknown(UnknownSection<'a>),
     // Other section coming
 }
@@ -43,6 +44,11 @@ pub struct FunctionSection {
 #[derive(Debug, PartialEq, Eq)]
 pub struct TableSection {
     pub tables: Vec<TableType>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct MemorySection {
+    pub memories: Vec<MemoryType>,
 }
 
 // will be removed all section parser is implemented.
@@ -99,6 +105,7 @@ impl Section<'_> {
             Section::Import(_) => SectionID::Import,
             Section::Function(_) => SectionID::Function,
             Section::Table(_) => SectionID::Table,
+            Section::Memory(_) => SectionID::Memory,
             Section::Unknown(unknown) => unknown.id,
         }
     }
