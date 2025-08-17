@@ -9,8 +9,7 @@ use nom::{
 
 use super::integer::parse_varuint32;
 use crate::ast::types::{
-    FunctionType, GlobalType, Limits, MemoryType, Mutability, ReferenceType, TableType, TypeIndex,
-    ValueType,
+    FunctionType, GlobalType, Limits, MemoryType, Mutability, ReferenceType, TableType, ValueType,
 };
 
 pub fn parse_value_type(input: &[u8]) -> IResult<&[u8], ValueType> {
@@ -35,10 +34,6 @@ pub fn parse_function_type(input: &[u8]) -> IResult<&[u8], FunctionType> {
 
 pub fn parse_reference_type(input: &[u8]) -> IResult<&[u8], ReferenceType> {
     map_res(u8, |byte| byte.try_into()).parse(input)
-}
-
-pub fn parse_type_index(input: &[u8]) -> IResult<&[u8], TypeIndex> {
-    map(parse_varuint32, |index| TypeIndex { index }).parse(input)
 }
 
 pub fn parse_limits(input: &[u8]) -> IResult<&[u8], Limits> {

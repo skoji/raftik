@@ -1,6 +1,6 @@
 use crate::ast::{
     instructions::Expression,
-    types::{FunctionType, GlobalType, MemoryType, TableType, TypeIndex},
+    types::{FunctionType, GlobalType, MemoryType, TableType},
 };
 
 #[derive(Debug, PartialEq, Eq)]
@@ -11,6 +11,7 @@ pub enum Section<'a> {
     Table(TableSection),
     Memory(MemorySection),
     Global(GlobalSection<'a>),
+    Export(ExportSection),
     Unknown(UnknownSection<'a>),
     // Other section coming
 }
@@ -34,7 +35,7 @@ pub struct Import {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ImportDesc {
-    TypeIndex(TypeIndex),
+    TypeIndex(u32),
     Table(TableType),
     Memory(MemoryType),
     Global(GlobalType),
@@ -42,7 +43,7 @@ pub enum ImportDesc {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct FunctionSection {
-    pub type_indexes: Vec<TypeIndex>,
+    pub type_indexes: Vec<u32>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -64,6 +65,25 @@ pub struct GlobalSection<'a> {
 pub struct Global<'a> {
     pub global_type: GlobalType,
     pub expression: Expression<'a>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct ExportSection {
+    pub exports: Vec<Export>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct Export {
+    pub name: String,
+    pub desc: ExportDesc,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum ExportDesc {
+    FunctionIndex(u32),
+    TableIndex(u32),
+    MemoryIndex(u32),
+    GlobalIndex(u32),
 }
 
 // will be removed all section parser is implemented.
@@ -122,6 +142,7 @@ impl Section<'_> {
             Section::Table(_) => SectionID::Table,
             Section::Memory(_) => SectionID::Memory,
             Section::Global(_) => SectionID::Global,
+            Section::Export(_) => SectionID::Export,
             Section::Unknown(unknown) => unknown.id,
         }
     }
