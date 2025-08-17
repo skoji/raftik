@@ -8,6 +8,7 @@ use nom::{
 };
 
 use super::{
+    instructions::parse_expression,
     integer::parse_varuint32,
     name::parse_name,
     section_parser_trait::ParseSection,
@@ -19,8 +20,8 @@ use super::{
 use crate::ast::{
     Module,
     section::{
-        FunctionSection, Import, ImportDesc, ImportSection, MemorySection, Section, SectionID,
-        TableSection, TypeSection, UnknownSection,
+        FunctionSection, Global, GlobalSection, Import, ImportDesc, ImportSection, MemorySection,
+        Section, SectionID, TableSection, TypeSection, UnknownSection,
     },
 };
 
@@ -32,7 +33,7 @@ pub fn parse_module(input: &'_ [u8]) -> IResult<&[u8], Module<'_>> {
     .parse(input)
 }
 
-impl ParseSection for TypeSection {
+impl ParseSection<'_> for TypeSection {
     fn parse_from_payload(payload: &[u8]) -> IResult<&[u8], Self> {
         map(
             length_count(parse_varuint32, parse_function_type),
@@ -42,30 +43,11 @@ impl ParseSection for TypeSection {
     }
 }
 
-impl ParseSection for ImportSection {
+impl ParseSection<'_> for ImportSection {
     fn parse_from_payload(payload: &[u8]) -> IResult<&[u8], Self> {
         map(length_count(parse_varuint32, parse_import), |imports| {
             ImportSection { imports }
         })
-        .parse(payload)
-    }
-}
-
-impl ParseSection for TableSection {
-    fn parse_from_payload(payload: &[u8]) -> IResult<&[u8], Self> {
-        map(length_count(parse_varuint32, parse_table_type), |tables| {
-            TableSection { tables }
-        })
-        .parse(payload)
-    }
-}
-
-impl ParseSection for MemorySection {
-    fn parse_from_payload(payload: &[u8]) -> IResult<&[u8], Self> {
-        map(
-            length_count(parse_varuint32, parse_memory_type),
-            |memories| MemorySection { memories },
-        )
         .parse(payload)
     }
 }
@@ -96,7 +78,46 @@ fn parse_import_desc(input: &[u8]) -> IResult<&[u8], ImportDesc> {
     .parse(input)
 }
 
-impl ParseSection for FunctionSection {
+impl ParseSection<'_> for TableSection {
+    fn parse_from_payload(payload: &[u8]) -> IResult<&[u8], Self> {
+        map(length_count(parse_varuint32, parse_table_type), |tables| {
+            TableSection { tables }
+        })
+        .parse(payload)
+    }
+}
+
+impl ParseSection<'_> for MemorySection {
+    fn parse_from_payload(payload: &[u8]) -> IResult<&[u8], Self> {
+        map(
+            length_count(parse_varuint32, parse_memory_type),
+            |memories| MemorySection { memories },
+        )
+        .parse(payload)
+    }
+}
+
+impl<'a> ParseSection<'a> for GlobalSection<'a> {
+    fn parse_from_payload(payload: &'a [u8]) -> IResult<&'a [u8], GlobalSection<'a>> {
+        map(length_count(parse_varuint32, parse_global), |globals| {
+            GlobalSection { globals }
+        })
+        .parse(payload)
+    }
+}
+
+fn parse_global(input: &[u8]) -> IResult<&[u8], Global<'_>> {
+    map(
+        (parse_global_type, parse_expression),
+        |(global_type, expression)| Global {
+            global_type,
+            expression,
+        },
+    )
+    .parse(input)
+}
+
+impl ParseSection<'_> for FunctionSection {
     fn parse_from_payload(payload: &[u8]) -> IResult<&[u8], Self> {
         map(
             length_count(parse_varuint32, parse_type_index),
@@ -131,6 +152,7 @@ fn parse_section(input: &[u8]) -> IResult<&[u8], Section<'_>> {
         SectionID::Function => Section::Function(FunctionSection::parse_all(payload)?),
         SectionID::Table => Section::Table(TableSection::parse_all(payload)?),
         SectionID::Memory => Section::Memory(MemorySection::parse_all(payload)?),
+        SectionID::Global => Section::Global(GlobalSection::parse_all(payload)?),
         _ => Section::Unknown(UnknownSection { id, payload }),
     };
     Ok((input, section))

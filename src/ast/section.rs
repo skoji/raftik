@@ -1,4 +1,7 @@
-use crate::ast::types::{FunctionType, GlobalType, MemoryType, TableType, TypeIndex};
+use crate::ast::{
+    instructions::Expression,
+    types::{FunctionType, GlobalType, MemoryType, TableType, TypeIndex},
+};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Section<'a> {
@@ -7,6 +10,7 @@ pub enum Section<'a> {
     Function(FunctionSection),
     Table(TableSection),
     Memory(MemorySection),
+    Global(GlobalSection<'a>),
     Unknown(UnknownSection<'a>),
     // Other section coming
 }
@@ -49,6 +53,17 @@ pub struct TableSection {
 #[derive(Debug, PartialEq, Eq)]
 pub struct MemorySection {
     pub memories: Vec<MemoryType>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct GlobalSection<'a> {
+    pub globals: Vec<Global<'a>>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct Global<'a> {
+    pub global_type: GlobalType,
+    pub expression: Expression<'a>,
 }
 
 // will be removed all section parser is implemented.
@@ -106,6 +121,7 @@ impl Section<'_> {
             Section::Function(_) => SectionID::Function,
             Section::Table(_) => SectionID::Table,
             Section::Memory(_) => SectionID::Memory,
+            Section::Global(_) => SectionID::Global,
             Section::Unknown(unknown) => unknown.id,
         }
     }
