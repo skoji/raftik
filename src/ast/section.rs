@@ -1,6 +1,6 @@
 use crate::ast::{
     instructions::Expression,
-    types::{FunctionType, GlobalType, MemoryType, TableType, TypeIndex},
+    types::{FunctionType, GlobalType, MemoryType, TableType},
 };
 
 #[derive(Debug, PartialEq, Eq)]
@@ -34,7 +34,7 @@ pub struct Import {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ImportDesc {
-    TypeIndex(TypeIndex),
+    TypeIndex(u32),
     Table(TableType),
     Memory(MemoryType),
     Global(GlobalType),
@@ -42,7 +42,7 @@ pub enum ImportDesc {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct FunctionSection {
-    pub type_indexes: Vec<TypeIndex>,
+    pub type_indexes: Vec<u32>,
 }
 
 #[derive(Debug, PartialEq, Eq)]

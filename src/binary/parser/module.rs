@@ -12,10 +12,7 @@ use super::{
     integer::parse_varuint32,
     name::parse_name,
     section_parser_trait::ParseSection,
-    types::{
-        parse_function_type, parse_global_type, parse_memory_type, parse_table_type,
-        parse_type_index,
-    },
+    types::{parse_function_type, parse_global_type, parse_memory_type, parse_table_type},
 };
 use crate::ast::{
     Module,
@@ -62,7 +59,7 @@ fn parse_import(input: &[u8]) -> IResult<&[u8], Import> {
 
 fn parse_import_desc(input: &[u8]) -> IResult<&[u8], ImportDesc> {
     alt((
-        map((tag(&[0x00][..]), parse_type_index), |(_, type_index)| {
+        map((tag(&[0x00][..]), parse_varuint32), |(_, type_index)| {
             ImportDesc::TypeIndex(type_index)
         }),
         map((tag(&[0x01][..]), parse_table_type), |(_, table_type)| {
@@ -120,7 +117,7 @@ fn parse_global(input: &[u8]) -> IResult<&[u8], Global<'_>> {
 impl ParseSection<'_> for FunctionSection {
     fn parse_from_payload(payload: &[u8]) -> IResult<&[u8], Self> {
         map(
-            length_count(parse_varuint32, parse_type_index),
+            length_count(parse_varuint32, parse_varuint32),
             |type_indexes| FunctionSection { type_indexes },
         )
         .parse(payload)

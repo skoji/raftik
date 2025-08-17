@@ -94,7 +94,7 @@ mod tests {
                 imports: vec![Import {
                     module: "console".to_string(),
                     name: "log".to_string(),
-                    desc: ImportDesc::TypeIndex(TypeIndex { index: 0 })
+                    desc: ImportDesc::TypeIndex(0)
                 }]
             })
         );
@@ -117,7 +117,7 @@ mod tests {
         assert_eq!(
             module.sections[1],
             Section::Function(FunctionSection {
-                type_indexes: vec![TypeIndex { index: 0 }]
+                type_indexes: vec![0]
             })
         );
     }
