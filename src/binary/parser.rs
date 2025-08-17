@@ -38,7 +38,7 @@ impl<'a> TryFrom<&'a [u8]> for Module<'a> {
 #[cfg(test)]
 mod tests {
     use crate::ast::{
-        FunctionSection, ImportSection, Module, Section, TableSection, TypeSection,
+        FunctionSection, ImportSection, MemorySection, Module, Section, TableSection, TypeSection,
         section::{Import, ImportDesc},
         types::*,
     };
@@ -136,5 +136,23 @@ mod tests {
                 }]
             })
         );
+    }
+
+    #[test]
+    fn test_wasm_with_memory_section() {
+        let wasm = wat::parse_str("(module (memory 100))").unwrap();
+        let module = Module::try_from(wasm.as_ref()).unwrap();
+        assert_eq!(module.sections.len(), 1);
+        assert_eq!(
+            module.sections[0],
+            Section::Memory(MemorySection {
+                memories: vec![MemoryType {
+                    limits: Limits {
+                        min: 100,
+                        max: None,
+                    }
+                }]
+            })
+        )
     }
 }
