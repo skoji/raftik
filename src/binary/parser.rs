@@ -1,3 +1,4 @@
+mod instructions;
 mod integer;
 mod leb128;
 mod module;
@@ -38,8 +39,10 @@ impl<'a> TryFrom<&'a [u8]> for Module<'a> {
 #[cfg(test)]
 mod tests {
     use crate::ast::{
-        FunctionSection, ImportSection, MemorySection, Module, Section, TableSection, TypeSection,
-        section::{Import, ImportDesc},
+        FunctionSection, GlobalSection, ImportSection, MemorySection, Module, Section,
+        TableSection, TypeSection,
+        instructions::*,
+        section::{Global, Import, ImportDesc},
         types::*,
     };
     #[test]
@@ -150,6 +153,27 @@ mod tests {
                     limits: Limits {
                         min: 100,
                         max: None,
+                    }
+                }]
+            })
+        )
+    }
+
+    #[test]
+    fn test_wasm_with_global_section() {
+        let wasm = wat::parse_str("(module (global i32 (i32.const 32)))").unwrap();
+        let module = Module::try_from(wasm.as_ref()).unwrap();
+        assert_eq!(module.sections.len(), 1);
+        assert_eq!(
+            module.sections[0],
+            Section::Global(GlobalSection {
+                globals: vec![Global {
+                    global_type: GlobalType {
+                        val_type: ValueType::Number(NumberType::I32),
+                        mutability: Mutability::Const,
+                    },
+                    expression: Expression {
+                        instructions: &[0x41, 0x20][..]
                     }
                 }]
             })
