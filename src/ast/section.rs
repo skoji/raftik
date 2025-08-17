@@ -66,6 +66,25 @@ pub struct Global<'a> {
     pub expression: Expression<'a>,
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct ExportSection {
+    pub exports: Vec<Export>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct Export {
+    pub name: String,
+    pub desc: ExportDesc,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum ExportDesc {
+    FunctionIndex(u32),
+    TableIndex(u32),
+    MemoryIndex(u32),
+    GlobalIndex(u32),
+}
+
 // will be removed all section parser is implemented.
 #[derive(Debug, PartialEq, Eq)]
 pub struct UnknownSection<'a> {
