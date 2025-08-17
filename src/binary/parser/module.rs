@@ -19,8 +19,8 @@ use super::{
 use crate::ast::{
     Module,
     section::{
-        FunctionSection, Import, ImportDesc, ImportSection, Section, SectionID, TypeSection,
-        UnknownSection,
+        FunctionSection, Import, ImportDesc, ImportSection, Section, SectionID, TableSection,
+        TypeSection, UnknownSection,
     },
 };
 
@@ -46,6 +46,15 @@ impl ParseSection for ImportSection {
     fn parse_from_payload(payload: &[u8]) -> IResult<&[u8], Self> {
         map(length_count(parse_varuint32, parse_import), |imports| {
             ImportSection { imports }
+        })
+        .parse(payload)
+    }
+}
+
+impl ParseSection for TableSection {
+    fn parse_from_payload(payload: &[u8]) -> IResult<&[u8], Self> {
+        map(length_count(parse_varuint32, parse_table_type), |tables| {
+            TableSection { tables }
         })
         .parse(payload)
     }
@@ -110,6 +119,7 @@ fn parse_section(input: &[u8]) -> IResult<&[u8], Section<'_>> {
         SectionID::Type => Section::Type(TypeSection::parse_all(payload)?),
         SectionID::Import => Section::Import(ImportSection::parse_all(payload)?),
         SectionID::Function => Section::Function(FunctionSection::parse_all(payload)?),
+        SectionID::Table => Section::Table(TableSection::parse_all(payload)?),
         _ => Section::Unknown(UnknownSection { id, payload }),
     };
     Ok((input, section))

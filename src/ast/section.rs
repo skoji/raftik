@@ -5,6 +5,7 @@ pub enum Section<'a> {
     Type(TypeSection),
     Import(ImportSection),
     Function(FunctionSection),
+    Table(TableSection),
     Unknown(UnknownSection<'a>),
     // Other section coming
 }
@@ -37,6 +38,11 @@ pub enum ImportDesc {
 #[derive(Debug, PartialEq, Eq)]
 pub struct FunctionSection {
     pub type_indexes: Vec<TypeIndex>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct TableSection {
+    pub tables: Vec<TableType>,
 }
 
 // will be removed all section parser is implemented.
@@ -92,6 +98,7 @@ impl Section<'_> {
             Section::Type(_) => SectionID::Type,
             Section::Import(_) => SectionID::Import,
             Section::Function(_) => SectionID::Function,
+            Section::Table(_) => SectionID::Table,
             Section::Unknown(unknown) => unknown.id,
         }
     }

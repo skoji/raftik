@@ -38,7 +38,7 @@ impl<'a> TryFrom<&'a [u8]> for Module<'a> {
 #[cfg(test)]
 mod tests {
     use crate::ast::{
-        FunctionSection, ImportSection, Module, Section, TypeSection,
+        FunctionSection, ImportSection, Module, Section, TableSection, TypeSection,
         section::{Import, ImportDesc},
         types::*,
     };
@@ -115,6 +115,25 @@ mod tests {
             module.sections[1],
             Section::Function(FunctionSection {
                 type_indexes: vec![TypeIndex { index: 0 }]
+            })
+        );
+    }
+
+    #[test]
+    fn test_wasm_with_table_section() {
+        let wasm = wat::parse_str("(module (table 1 10 funcref))").unwrap();
+        let module = Module::try_from(wasm.as_ref()).unwrap();
+        assert_eq!(module.sections.len(), 1);
+        assert_eq!(
+            module.sections[0],
+            Section::Table(TableSection {
+                tables: vec![TableType {
+                    ref_type: ReferenceType::FuncRef,
+                    limits: Limits {
+                        min: 1,
+                        max: Some(10)
+                    }
+                }]
             })
         );
     }
