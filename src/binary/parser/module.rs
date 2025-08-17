@@ -18,8 +18,8 @@ use crate::ast::{
     Module,
     section::{
         Export, ExportDesc, ExportSection, FunctionSection, Global, GlobalSection, Import,
-        ImportDesc, ImportSection, MemorySection, Section, SectionID, TableSection, TypeSection,
-        UnknownSection,
+        ImportDesc, ImportSection, MemorySection, Section, SectionID, StartSection, TableSection,
+        TypeSection, UnknownSection,
     },
 };
 
@@ -156,6 +156,15 @@ fn parse_export_desc(input: &[u8]) -> IResult<&[u8], ExportDesc> {
     .parse(input)
 }
 
+impl ParseSection<'_> for StartSection {
+    fn parse_from_payload(payload: &[u8]) -> IResult<&[u8], Self> {
+        map(parse_varuint32, |start_function_index| StartSection {
+            start_function_index,
+        })
+        .parse(payload)
+    }
+}
+
 fn parse_magic(input: &[u8]) -> IResult<&[u8], &[u8; 4]> {
     map(tag(&b"\0asm"[..]), |magic: &[u8]| {
         magic.try_into().expect("magic should be exactly 4 bytes")
@@ -183,6 +192,7 @@ fn parse_section(input: &[u8]) -> IResult<&[u8], Section<'_>> {
         SectionID::Memory => Section::Memory(MemorySection::parse_all(payload)?),
         SectionID::Global => Section::Global(GlobalSection::parse_all(payload)?),
         SectionID::Export => Section::Export(ExportSection::parse_all(payload)?),
+        SectionID::Start => Section::Start(StartSection::parse_all(payload)?),
         _ => Section::Unknown(UnknownSection { id, payload }),
     };
     Ok((input, section))

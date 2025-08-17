@@ -4,7 +4,7 @@ pub mod types;
 
 pub use section::{
     ExportSection, FunctionSection, GlobalSection, ImportSection, MemorySection, Section,
-    TableSection, TypeSection,
+    StartSection, TableSection, TypeSection,
 };
 
 #[derive(Debug, PartialEq, Eq, Default)]
