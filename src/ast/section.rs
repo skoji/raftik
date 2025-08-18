@@ -1,6 +1,6 @@
 use crate::ast::{
     instructions::Expression,
-    types::{FunctionType, GlobalType, MemoryType, TableType},
+    types::{FunctionType, GlobalType, MemoryType, ReferenceType, TableType},
 };
 
 #[derive(Debug, PartialEq, Eq)]
@@ -13,6 +13,7 @@ pub enum Section<'a> {
     Global(GlobalSection<'a>),
     Export(ExportSection),
     Start(StartSection),
+    Element(ElementSection<'a>),
     Unknown(UnknownSection<'a>),
     // Other section coming
 }
@@ -91,6 +92,33 @@ pub struct StartSection {
     pub start_function_index: u32,
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct ElementSection<'a> {
+    pub elements: Vec<Element<'a>>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct Element<'a> {
+    pub kind: ElementKind<'a>,
+    pub items: ElementItems<'a>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum ElementKind<'a> {
+    Active {
+        table_index: Option<u32>,
+        offset_expression: Expression<'a>,
+    },
+    Declarative,
+    Passive,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum ElementItems<'a> {
+    Functions(Vec<u32>),
+    Expressions(ReferenceType, Vec<Expression<'a>>),
+}
+
 // will be removed all section parser is implemented.
 #[derive(Debug, PartialEq, Eq)]
 pub struct UnknownSection<'a> {
@@ -149,6 +177,7 @@ impl Section<'_> {
             Section::Global(_) => SectionID::Global,
             Section::Export(_) => SectionID::Export,
             Section::Start(_) => SectionID::Start,
+            Section::Element(_) => SectionID::Element,
             Section::Unknown(unknown) => unknown.id,
         }
     }
