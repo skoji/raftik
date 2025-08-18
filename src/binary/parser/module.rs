@@ -207,11 +207,15 @@ fn parse_element(input: &[u8]) -> IResult<&[u8], Element<'_>> {
     };
     let (input, items) = match flag & 0b100 {
         0b000 => {
-            let (input, (_, function_indicies)) = (
-                tag(&[0x00][..]),
-                length_count(parse_varuint32, parse_varuint32),
-            )
-                .parse(input)?;
+            let input = match kind {
+                ElementKind::Declarative | ElementKind::Passive => {
+                    let (input, _) = tag(&[0x00][..])(input)?;
+                    input
+                }
+                _ => input,
+            };
+            let (input, function_indicies) =
+                length_count(parse_varuint32, parse_varuint32).parse(input)?;
             (input, ElementItems::Functions(function_indicies))
         }
         0b100 => {
@@ -255,6 +259,7 @@ fn parse_section(input: &[u8]) -> IResult<&[u8], Section<'_>> {
         SectionID::Global => Section::Global(GlobalSection::parse_all(payload)?),
         SectionID::Export => Section::Export(ExportSection::parse_all(payload)?),
         SectionID::Start => Section::Start(StartSection::parse_all(payload)?),
+        SectionID::Element => Section::Element(ElementSection::parse_all(payload)?),
         _ => Section::Unknown(UnknownSection { id, payload }),
     };
     Ok((input, section))
