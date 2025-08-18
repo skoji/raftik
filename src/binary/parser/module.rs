@@ -12,14 +12,17 @@ use super::{
     integer::parse_varuint32,
     name::parse_name,
     section_parser_trait::ParseSection,
-    types::{parse_function_type, parse_global_type, parse_memory_type, parse_table_type},
+    types::{
+        parse_function_type, parse_global_type, parse_memory_type, parse_reference_type,
+        parse_table_type,
+    },
 };
 use crate::ast::{
     Module,
     section::{
-        Export, ExportDesc, ExportSection, FunctionSection, Global, GlobalSection, Import,
-        ImportDesc, ImportSection, MemorySection, Section, SectionID, StartSection, TableSection,
-        TypeSection, UnknownSection,
+        Element, ElementItems, ElementKind, ElementSection, Export, ExportDesc, ExportSection,
+        FunctionSection, Global, GlobalSection, Import, ImportDesc, ImportSection, MemorySection,
+        Section, SectionID, StartSection, TableSection, TypeSection, UnknownSection,
     },
 };
 
@@ -163,6 +166,65 @@ impl ParseSection<'_> for StartSection {
         })
         .parse(payload)
     }
+}
+
+impl<'a> ParseSection<'a> for ElementSection<'a> {
+    fn parse_from_payload(payload: &'a [u8]) -> IResult<&'a [u8], Self> {
+        map(length_count(parse_varuint32, parse_element), |elements| {
+            ElementSection { elements }
+        })
+        .parse(payload)
+    }
+}
+
+fn parse_element(input: &[u8]) -> IResult<&[u8], Element<'_>> {
+    let (input, flag) = parse_varuint32(input)?;
+    let (input, kind) = match flag & 0b11 {
+        0b00 => {
+            let (input, offset_expression) = parse_expression(input)?;
+            (
+                input,
+                ElementKind::Active {
+                    table_index: None,
+                    offset_expression,
+                },
+            )
+        }
+        0b10 => {
+            let (input, (table_index, offset_expression)) =
+                (parse_varuint32, parse_expression).parse(input)?;
+            (
+                input,
+                ElementKind::Active {
+                    table_index: Some(table_index),
+                    offset_expression,
+                },
+            )
+        }
+        0b01 => (input, ElementKind::Passive),
+        0b11 => (input, ElementKind::Declarative),
+        _ => unreachable!(),
+    };
+    let (input, items) = match flag & 0b100 {
+        0b000 => {
+            let (input, (_, function_indicies)) = (
+                tag(&[0x00][..]),
+                length_count(parse_varuint32, parse_varuint32),
+            )
+                .parse(input)?;
+            (input, ElementItems::Functions(function_indicies))
+        }
+        0b100 => {
+            let (input, (reftype, expressions)) = (
+                parse_reference_type,
+                length_count(parse_varuint32, parse_expression),
+            )
+                .parse(input)?;
+            (input, ElementItems::Expressions(reftype, expressions))
+        }
+        _ => unreachable!(),
+    };
+    Ok((input, Element { kind, items }))
 }
 
 fn parse_magic(input: &[u8]) -> IResult<&[u8], &[u8; 4]> {
