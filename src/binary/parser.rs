@@ -10,10 +10,8 @@ use module::parse_module;
 
 use crate::ast::Module;
 
-impl<'a> TryFrom<&'a [u8]> for Module<'a> {
-    type Error = String;
-
-    fn try_from(input: &'a [u8]) -> Result<Self, Self::Error> {
+impl<'a> Module<'a> {
+    pub fn from_slice(input: &'a [u8]) -> Result<Self, String> {
         let (_, module) =
             parse_module(input).map_err(|e| format!("Failed to parse module: {:?}", e))?;
         // check section order
@@ -34,6 +32,10 @@ impl<'a> TryFrom<&'a [u8]> for Module<'a> {
         }
         Ok(module)
     }
+
+    pub fn from_bytes(bytes: &'a Vec<u8>) -> Result<Self, String> {
+        Module::from_slice(bytes.as_ref())
+    }
 }
 
 #[cfg(test)]
@@ -48,14 +50,14 @@ mod tests {
     #[test]
     fn test_minimal_wasm() {
         let wasm = wat::parse_str("(module)").unwrap();
-        let module = Module::try_from(wasm.as_ref()).unwrap();
+        let module = Module::from_bytes(wasm.as_ref()).unwrap();
         assert_eq!(module, Module::default());
     }
 
     #[test]
     fn test_wasm_with_type_section() {
         let wasm = wat::parse_str("(module (type (func (param i32 i32) (result i64))))").unwrap();
-        let module = Module::try_from(wasm.as_ref()).unwrap();
+        let module = Module::from_bytes(wasm.as_ref()).unwrap();
         assert_eq!(
             module,
             Module {
@@ -76,7 +78,7 @@ mod tests {
     fn test_wasm_with_import_section() {
         let wasm = wat::parse_str("(module (import \"console\" \"log\" (func $log (param i32))))")
             .unwrap();
-        let module = Module::try_from(wasm.as_ref()).unwrap();
+        let module = Module::from_bytes(wasm.as_ref()).unwrap();
         // type section and import section exists.
         assert_eq!(module.sections.len(), 3);
         assert_eq!(
@@ -103,7 +105,7 @@ mod tests {
     fn test_wasm_with_function_section() {
         let wasm =
             wat::parse_str("(module (func (param $l i32) (result i32) local.get $l))").unwrap();
-        let module = Module::try_from(wasm.as_ref()).unwrap();
+        let module = Module::from_bytes(wasm.as_ref()).unwrap();
         assert_eq!(module.sections.len(), 4);
         assert_eq!(
             module.sections[0],
@@ -125,7 +127,7 @@ mod tests {
     #[test]
     fn test_wasm_with_table_section() {
         let wasm = wat::parse_str("(module (table 1 10 funcref))").unwrap();
-        let module = Module::try_from(wasm.as_ref()).unwrap();
+        let module = Module::from_bytes(wasm.as_ref()).unwrap();
         assert_eq!(module.sections.len(), 1);
         assert_eq!(
             module.sections[0],
@@ -144,7 +146,7 @@ mod tests {
     #[test]
     fn test_wasm_with_memory_section() {
         let wasm = wat::parse_str("(module (memory 100))").unwrap();
-        let module = Module::try_from(wasm.as_ref()).unwrap();
+        let module = Module::from_bytes(wasm.as_ref()).unwrap();
         assert_eq!(module.sections.len(), 1);
         assert_eq!(
             module.sections[0],
@@ -162,7 +164,7 @@ mod tests {
     #[test]
     fn test_wasm_with_global_section() {
         let wasm = wat::parse_str("(module (global i32 (i32.const 32)))").unwrap();
-        let module = Module::try_from(wasm.as_ref()).unwrap();
+        let module = Module::from_bytes(wasm.as_ref()).unwrap();
         assert_eq!(module.sections.len(), 1);
         assert_eq!(
             module.sections[0],
@@ -185,7 +187,7 @@ mod tests {
         let wasm =
             wat::parse_str("(module (func (export \"the_answer\") (result i32) i32.const 42))")
                 .unwrap();
-        let module = Module::try_from(wasm.as_ref()).unwrap();
+        let module = Module::from_bytes(wasm.as_ref()).unwrap();
         assert_eq!(module.sections.len(), 4); // Type, Function, Export, Code
         assert_eq!(module.sections[0].id(), SectionID::Type);
         assert_eq!(module.sections[1].id(), SectionID::Function);
@@ -203,7 +205,7 @@ mod tests {
     #[test]
     fn test_wasm_with_start_section() {
         let wasm = wat::parse_str("(module (func) (start 0))").unwrap();
-        let module = Module::try_from(wasm.as_ref()).unwrap();
+        let module = Module::from_bytes(wasm.as_ref()).unwrap();
         assert_eq!(module.sections.len(), 4); // Type, Function, Start, Code
         assert_eq!(module.sections[0].id(), SectionID::Type);
         assert_eq!(module.sections[1].id(), SectionID::Function);
