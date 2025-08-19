@@ -7,4 +7,4 @@ edition = "2024"
 nom = "8.0.0"
 
 [dev-dependencies]
-wat = "1.236.0"
+wat = "1.236.1"
