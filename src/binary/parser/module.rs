@@ -24,6 +24,7 @@ use crate::ast::{
         FunctionSection, Global, GlobalSection, Import, ImportDesc, ImportSection, MemorySection,
         Section, SectionID, StartSection, TableSection, TypeSection, UnknownSection,
     },
+    types::ReferenceType,
 };
 
 pub fn parse_module(input: &'_ [u8]) -> IResult<&[u8], Module<'_>> {
@@ -207,23 +208,24 @@ fn parse_element(input: &[u8]) -> IResult<&[u8], Element<'_>> {
     };
     let (input, items) = match flag & 0b100 {
         0b000 => {
-            let input = match kind {
-                ElementKind::Declarative | ElementKind::Passive => {
-                    let (input, _) = tag(&[0x00][..])(input)?;
-                    input
-                }
-                _ => input,
+            let input = if flag == 0b000 {
+                input
+            } else {
+                let (input, _) = tag(&[0x00][..])(input)?;
+                input
             };
             let (input, function_indicies) =
                 length_count(parse_varuint32, parse_varuint32).parse(input)?;
             (input, ElementItems::Functions(function_indicies))
         }
         0b100 => {
-            let (input, (reftype, expressions)) = (
-                parse_reference_type,
-                length_count(parse_varuint32, parse_expression),
-            )
-                .parse(input)?;
+            let (input, reftype) = if flag == 0b100 {
+                (input, ReferenceType::FuncRef)
+            } else {
+                parse_reference_type(input)?
+            };
+            let (input, expressions) =
+                length_count(parse_varuint32, parse_expression).parse(input)?;
             (input, ElementItems::Expressions(reftype, expressions))
         }
         _ => unreachable!(),
