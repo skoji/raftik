@@ -32,10 +32,6 @@ impl<'a> Module<'a> {
         }
         Ok(module)
     }
-
-    pub fn from_bytes(bytes: &'a Vec<u8>) -> Result<Self, String> {
-        Module::from_slice(bytes.as_ref())
-    }
 }
 
 #[cfg(test)]
@@ -53,7 +49,7 @@ mod tests {
 
     fn with_wat(wat: impl AsRef<str>, test: impl Fn(Module)) {
         let wasm = wat::parse_str(wat).unwrap();
-        let module = Module::from_bytes(&wasm).unwrap();
+        let module = Module::from_slice(&wasm).unwrap();
         test(module)
     }
 
