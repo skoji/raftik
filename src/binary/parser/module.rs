@@ -214,9 +214,9 @@ fn parse_element(input: &[u8]) -> IResult<&[u8], Element<'_>> {
                 let (input, _) = tag(&[0x00][..])(input)?;
                 input
             };
-            let (input, function_indicies) =
+            let (input, function_indices) =
                 length_count(parse_varuint32, parse_varuint32).parse(input)?;
-            (input, ElementItems::Functions(function_indicies))
+            (input, ElementItems::Functions(function_indices))
         }
         0b100 => {
             let (input, reftype) = if flag == 0b100 {
