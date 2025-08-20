@@ -41,10 +41,13 @@ impl<'a> Module<'a> {
 #[cfg(test)]
 mod tests {
     use crate::ast::{
-        ExportSection, FunctionSection, GlobalSection, ImportSection, MemorySection, Module,
-        Section, StartSection, TableSection, TypeSection,
+        ElementSection, ExportSection, FunctionSection, GlobalSection, ImportSection,
+        MemorySection, Module, Section, StartSection, TableSection, TypeSection,
         instructions::*,
-        section::{Export, ExportDesc, Global, Import, ImportDesc, SectionID},
+        section::{
+            Element, ElementItems, ElementKind, Export, ExportDesc, Global, Import, ImportDesc,
+            SectionID,
+        },
         types::*,
     };
 
@@ -52,6 +55,12 @@ mod tests {
         let wasm = wat::parse_str(wat).unwrap();
         let module = Module::from_bytes(&wasm).unwrap();
         test(module)
+    }
+
+    impl Module<'_> {
+        pub fn find_section(&self, id: SectionID) -> Option<&Section<'_>> {
+            self.sections.iter().find(|s| s.id() == id)
+        }
     }
 
     #[test]
@@ -228,5 +237,190 @@ mod tests {
                 })
             );
         });
+    }
+    #[test]
+    fn test_wasm_with_element_section_0() {
+        with_wat(
+            "(module (table 1 funcref) (func $f0) (elem (i32.const 0) func $f0))",
+            |module| {
+                let section = module.find_section(SectionID::Element).unwrap();
+                assert_eq!(
+                    *section,
+                    Section::Element(ElementSection {
+                        elements: vec![Element {
+                            kind: ElementKind::Active {
+                                table_index: None,
+                                offset_expression: Expression {
+                                    instructions: &[0x41, 0x00][..]
+                                }
+                            },
+                            items: ElementItems::Functions(vec![0])
+                        }],
+                    })
+                );
+            },
+        )
+    }
+
+    #[test]
+    fn test_wasm_with_element_section_1() {
+        with_wat("(module (func $f0) (elem func $f0))", |module| {
+            let section = module.find_section(SectionID::Element).unwrap();
+            assert_eq!(
+                *section,
+                Section::Element(ElementSection {
+                    elements: vec![Element {
+                        kind: ElementKind::Passive,
+                        items: ElementItems::Functions(vec![0])
+                    }],
+                })
+            );
+        });
+    }
+
+    #[test]
+    fn test_wasm_with_element_section_2() {
+        with_wat(
+            "(module  (table $t0 1 funcref) (table $t1 1 funcref) (func $f0) (elem 1 (i32.const 0) func $f0))",
+            |module| {
+                let section = module.find_section(SectionID::Element).unwrap();
+                assert_eq!(
+                    *section,
+                    Section::Element(ElementSection {
+                        elements: vec![Element {
+                            kind: ElementKind::Active {
+                                table_index: Some(1),
+                                offset_expression: Expression {
+                                    instructions: &[0x41, 0x00][..]
+                                }
+                            },
+                            items: ElementItems::Functions(vec![0])
+                        }],
+                    })
+                );
+            },
+        );
+    }
+
+    #[test]
+    fn test_wasm_with_element_section_3() {
+        with_wat("(module (func $f0) (elem declare func $f0))", |module| {
+            let section = module.find_section(SectionID::Element).unwrap();
+            assert_eq!(
+                *section,
+                Section::Element(ElementSection {
+                    elements: vec![Element {
+                        kind: ElementKind::Declarative,
+                        items: ElementItems::Functions(vec![0])
+                    }],
+                })
+            );
+        });
+    }
+
+    #[test]
+    fn test_wasm_with_element_section_4() {
+        with_wat(
+            "(module (table 1 funcref) (func $f0) (func) (elem (i32.const 0) funcref (ref.func 0)))",
+            |module| {
+                let section = module.find_section(SectionID::Element).unwrap();
+                assert_eq!(
+                    *section,
+                    Section::Element(ElementSection {
+                        elements: vec![Element {
+                            kind: ElementKind::Active {
+                                table_index: None,
+                                offset_expression: Expression {
+                                    instructions: &[0x41, 0x00][..]
+                                }
+                            },
+                            items: ElementItems::Expressions(
+                                ReferenceType::FuncRef,
+                                vec![Expression {
+                                    instructions: &[0xd2, 0][..]
+                                }]
+                            ),
+                        }],
+                    })
+                );
+            },
+        )
+    }
+
+    #[test]
+    fn test_wasm_with_element_section_5() {
+        with_wat(
+            "(module (func $f0) (elem funcref (ref.func 0)))",
+            |module| {
+                let section = module.find_section(SectionID::Element).unwrap();
+                assert_eq!(
+                    *section,
+                    Section::Element(ElementSection {
+                        elements: vec![Element {
+                            kind: ElementKind::Passive,
+                            items: ElementItems::Expressions(
+                                ReferenceType::FuncRef,
+                                vec![Expression {
+                                    instructions: &[0xd2, 0][..]
+                                }]
+                            ),
+                        }],
+                    })
+                );
+            },
+        );
+    }
+
+    #[test]
+    fn test_wasm_with_element_section_6() {
+        with_wat(
+            "(module  (table $t0 1 funcref) (table $t1 1 funcref) (func $f0) (elem 1 (i32.const 0) funcref (ref.func 0)))",
+            |module| {
+                let section = module.find_section(SectionID::Element).unwrap();
+                assert_eq!(
+                    *section,
+                    Section::Element(ElementSection {
+                        elements: vec![Element {
+                            kind: ElementKind::Active {
+                                table_index: Some(1),
+                                offset_expression: Expression {
+                                    instructions: &[0x41, 0x00][..]
+                                }
+                            },
+                            items: ElementItems::Expressions(
+                                ReferenceType::FuncRef,
+                                vec![Expression {
+                                    instructions: &[0xd2, 0][..]
+                                }]
+                            ),
+                        }],
+                    })
+                );
+            },
+        );
+    }
+
+    #[test]
+    fn test_wasm_with_element_section_7() {
+        with_wat(
+            "(module (func $f0) (elem declare funcref (ref.func 0)))",
+            |module| {
+                let section = module.find_section(SectionID::Element).unwrap();
+                assert_eq!(
+                    *section,
+                    Section::Element(ElementSection {
+                        elements: vec![Element {
+                            kind: ElementKind::Declarative,
+                            items: ElementItems::Expressions(
+                                ReferenceType::FuncRef,
+                                vec![Expression {
+                                    instructions: &[0xd2, 0][..]
+                                }]
+                            ),
+                        }],
+                    })
+                );
+            },
+        );
     }
 }
