@@ -20,10 +20,10 @@ use super::{
 use crate::ast::{
     Module,
     section::{
-        CodeSection, Element, ElementItems, ElementKind, ElementSection, Export, ExportDesc,
-        ExportSection, FunctionBody, FunctionSection, Global, GlobalSection, Import, ImportDesc,
-        ImportSection, Locals, MemorySection, Section, SectionID, StartSection, TableSection,
-        TypeSection, UnknownSection,
+        CodeSection, DataCountSection, DataMode, DataSection, DataSegment, Element, ElementItems,
+        ElementKind, ElementSection, Export, ExportDesc, ExportSection, FunctionBody,
+        FunctionSection, Global, GlobalSection, Import, ImportDesc, ImportSection, Locals,
+        MemorySection, Section, SectionID, StartSection, TableSection, TypeSection, UnknownSection,
     },
     types::ReferenceType,
 };
@@ -264,6 +264,54 @@ fn parse_locals(input: &[u8]) -> IResult<&[u8], Locals> {
     .parse(input)
 }
 
+impl<'a> ParseSection<'a> for DataSection<'a> {
+    fn parse_from_payload(payload: &'a [u8]) -> IResult<&'a [u8], Self> {
+        map(
+            length_count(parse_varuint32, parse_data_segment),
+            |segments| DataSection { segments },
+        )
+        .parse(payload)
+    }
+}
+
+fn parse_data_segment(input: &[u8]) -> IResult<&[u8], DataSegment<'_>> {
+    map(
+        (parse_data_mode, flat_map(parse_varuint32, take)),
+        |(mode, data)| DataSegment { mode, data },
+    )
+    .parse(input)
+}
+
+fn parse_data_mode(input: &[u8]) -> IResult<&[u8], DataMode<'_>> {
+    let (input, flag) = parse_varuint32(input)?;
+    match flag {
+        0 => map(parse_expression, |offset_expression| DataMode::Active {
+            memory_index: None,
+            offset_expression,
+        })
+        .parse(input),
+        1 => Ok((input, DataMode::Passive)),
+        2 => map(
+            (parse_varuint32, parse_expression),
+            |(memory_index, offset_expression)| DataMode::Active {
+                memory_index: Some(memory_index),
+                offset_expression,
+            },
+        )
+        .parse(input),
+        _ => Err(nom::Err::Error(nom::error::Error::<&[u8]> {
+            input,
+            code: nom::error::ErrorKind::Alt,
+        })),
+    }
+}
+
+impl ParseSection<'_> for DataCountSection {
+    fn parse_from_payload(payload: &[u8]) -> IResult<&[u8], Self> {
+        map(parse_varuint32, |count| DataCountSection { count }).parse(payload)
+    }
+}
+
 fn parse_magic(input: &[u8]) -> IResult<&[u8], &[u8; 4]> {
     map(tag(&b"\0asm"[..]), |magic: &[u8]| {
         magic.try_into().expect("magic should be exactly 4 bytes")
@@ -294,6 +342,8 @@ fn parse_section(input: &[u8]) -> IResult<&[u8], Section<'_>> {
         SectionID::Start => Section::Start(StartSection::parse_all(payload)?),
         SectionID::Element => Section::Element(ElementSection::parse_all(payload)?),
         SectionID::Code => Section::Code(CodeSection::parse_all(payload)?),
+        SectionID::Data => Section::Data(DataSection::parse_all(payload)?),
+        SectionID::DataCount => Section::DataCount(DataCountSection::parse_all(payload)?),
         _ => Section::Unknown(UnknownSection { id, payload }),
     };
     Ok((input, section))

@@ -17,8 +17,10 @@ pub enum Section<'a> {
     Start(StartSection),
     Element(ElementSection<'a>),
     Code(CodeSection<'a>),
+    Data(DataSection<'a>),
+    DataCount(DataCountSection),
+    // remaining: CustomSection
     Unknown(UnknownSection<'a>),
-    // Other section coming
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -139,6 +141,31 @@ pub struct Locals {
     pub value_type: ValueType,
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct DataSection<'a> {
+    pub segments: Vec<DataSegment<'a>>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct DataSegment<'a> {
+    pub mode: DataMode<'a>,
+    pub data: &'a [u8],
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum DataMode<'a> {
+    Active {
+        memory_index: Option<u32>,
+        offset_expression: Expression<'a>,
+    },
+    Passive,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct DataCountSection {
+    pub count: u32,
+}
+
 // will be removed all section parser is implemented.
 #[derive(Debug, PartialEq, Eq)]
 pub struct UnknownSection<'a> {
@@ -199,6 +226,8 @@ impl Section<'_> {
             Section::Start(_) => SectionID::Start,
             Section::Element(_) => SectionID::Element,
             Section::Code(_) => SectionID::Code,
+            Section::Data(_) => SectionID::Data,
+            Section::DataCount(_) => SectionID::DataCount,
             Section::Unknown(unknown) => unknown.id,
         }
     }
