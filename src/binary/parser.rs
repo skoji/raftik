@@ -37,12 +37,12 @@ impl<'a> Module<'a> {
 #[cfg(test)]
 mod tests {
     use crate::ast::{
-        CodeSection, ElementSection, ExportSection, FunctionSection, GlobalSection, ImportSection,
-        MemorySection, Module, Section, StartSection, TableSection, TypeSection,
+        CodeSection, DataSection, ElementSection, ExportSection, FunctionSection, GlobalSection,
+        ImportSection, MemorySection, Module, Section, StartSection, TableSection, TypeSection,
         instructions::*,
         section::{
-            Element, ElementItems, ElementKind, Export, ExportDesc, FunctionBody, Global, Import,
-            ImportDesc, Locals, SectionID,
+            DataMode, DataSegment, Element, ElementItems, ElementKind, Export, ExportDesc,
+            FunctionBody, Global, Import, ImportDesc, Locals, SectionID,
         },
         types::*,
     };
@@ -438,6 +438,46 @@ mod tests {
                                 instructions: &[0x20, 0, 0x20, 1, 0x6a][..]
                             }
                         }]
+                    })
+                );
+            },
+        );
+    }
+
+    #[test]
+    fn test_wasm_with_data_section() {
+        with_wat(
+            // there is no second memory, so it is not a valid wasm. for testing memory_index
+            "(module (memory 1 10) (data (i32.const 0) \"0\") (data \"1\") (data 1 (i32.const 0) \"2\"))",
+            |module| {
+                let data_section = module.find_section(SectionID::Data).unwrap();
+                assert_eq!(
+                    *data_section,
+                    Section::Data(DataSection {
+                        segments: vec![
+                            DataSegment {
+                                mode: DataMode::Active {
+                                    memory_index: None,
+                                    offset_expression: Expression {
+                                        instructions: &[0x41, 0][..]
+                                    }
+                                },
+                                data: &[48][..]
+                            },
+                            DataSegment {
+                                mode: DataMode::Passive,
+                                data: &[49][..]
+                            },
+                            DataSegment {
+                                mode: DataMode::Active {
+                                    memory_index: Some(1),
+                                    offset_expression: Expression {
+                                        instructions: &[0x41, 0][..]
+                                    }
+                                },
+                                data: &[50][..]
+                            },
+                        ]
                     })
                 );
             },
