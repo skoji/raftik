@@ -20,10 +20,10 @@ use super::{
 use crate::ast::{
     Module,
     section::{
-        CodeSection, DataMode, DataSection, DataSegment, Element, ElementItems, ElementKind,
-        ElementSection, Export, ExportDesc, ExportSection, FunctionBody, FunctionSection, Global,
-        GlobalSection, Import, ImportDesc, ImportSection, Locals, MemorySection, Section,
-        SectionID, StartSection, TableSection, TypeSection, UnknownSection,
+        CodeSection, DataCountSection, DataMode, DataSection, DataSegment, Element, ElementItems,
+        ElementKind, ElementSection, Export, ExportDesc, ExportSection, FunctionBody,
+        FunctionSection, Global, GlobalSection, Import, ImportDesc, ImportSection, Locals,
+        MemorySection, Section, SectionID, StartSection, TableSection, TypeSection, UnknownSection,
     },
     types::ReferenceType,
 };
@@ -306,6 +306,12 @@ fn parse_data_mode(input: &[u8]) -> IResult<&[u8], DataMode<'_>> {
     }
 }
 
+impl ParseSection<'_> for DataCountSection {
+    fn parse_from_payload(payload: &[u8]) -> IResult<&[u8], Self> {
+        map(parse_varuint32, |count| DataCountSection { count }).parse(payload)
+    }
+}
+
 fn parse_magic(input: &[u8]) -> IResult<&[u8], &[u8; 4]> {
     map(tag(&b"\0asm"[..]), |magic: &[u8]| {
         magic.try_into().expect("magic should be exactly 4 bytes")
@@ -337,6 +343,7 @@ fn parse_section(input: &[u8]) -> IResult<&[u8], Section<'_>> {
         SectionID::Element => Section::Element(ElementSection::parse_all(payload)?),
         SectionID::Code => Section::Code(CodeSection::parse_all(payload)?),
         SectionID::Data => Section::Data(DataSection::parse_all(payload)?),
+        SectionID::DataCount => Section::DataCount(DataCountSection::parse_all(payload)?),
         _ => Section::Unknown(UnknownSection { id, payload }),
     };
     Ok((input, section))
