@@ -19,8 +19,7 @@ pub enum Section<'a> {
     Code(CodeSection<'a>),
     Data(DataSection<'a>),
     DataCount(DataCountSection),
-    // remaining: CustomSection
-    Unknown(UnknownSection<'a>),
+    Custom(CustomSection<'a>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -166,10 +165,9 @@ pub struct DataCountSection {
     pub count: u32,
 }
 
-// will be removed all section parser is implemented.
 #[derive(Debug, PartialEq, Eq)]
-pub struct UnknownSection<'a> {
-    pub id: SectionID,
+pub struct CustomSection<'a> {
+    pub name: String,
     pub payload: &'a [u8],
 }
 
@@ -228,7 +226,7 @@ impl Section<'_> {
             Section::Code(_) => SectionID::Code,
             Section::Data(_) => SectionID::Data,
             Section::DataCount(_) => SectionID::DataCount,
-            Section::Unknown(unknown) => unknown.id,
+            Section::Custom(_) => SectionID::Custom,
         }
     }
 }
