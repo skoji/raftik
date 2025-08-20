@@ -37,12 +37,12 @@ impl<'a> Module<'a> {
 #[cfg(test)]
 mod tests {
     use crate::ast::{
-        ElementSection, ExportSection, FunctionSection, GlobalSection, ImportSection,
+        CodeSection, ElementSection, ExportSection, FunctionSection, GlobalSection, ImportSection,
         MemorySection, Module, Section, StartSection, TableSection, TypeSection,
         instructions::*,
         section::{
-            Element, ElementItems, ElementKind, Export, ExportDesc, Global, Import, ImportDesc,
-            SectionID,
+            Element, ElementItems, ElementKind, Export, ExportDesc, FunctionBody, Global, Import,
+            ImportDesc, Locals, SectionID,
         },
         types::*,
     };
@@ -414,6 +414,30 @@ mod tests {
                                 }]
                             ),
                         }],
+                    })
+                );
+            },
+        );
+    }
+
+    #[test]
+    fn test_wasm_with_code_section() {
+        with_wat(
+            "(module (func (param i32) (param i32) (result i32) (local f64) (local f64) local.get 0 local.get 1 i32.add))",
+            |module| {
+                let section = module.find_section(SectionID::Code).unwrap();
+                assert_eq!(
+                    *section,
+                    Section::Code(CodeSection {
+                        code: vec![FunctionBody {
+                            locals: vec![Locals {
+                                count: 2,
+                                value_type: ValueType::Number(NumberType::F64)
+                            }],
+                            expression: Expression {
+                                instructions: &[0x20, 0, 0x20, 1, 0x6a][..]
+                            }
+                        }]
                     })
                 );
             },
