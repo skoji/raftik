@@ -84,7 +84,7 @@ impl ParseSection<'_> for FunctionSection {
     fn parse_from_payload(payload: &[u8]) -> IResult<&[u8], Self> {
         map(
             length_count(parse_varuint32, parse_varuint32),
-            |type_indexes| FunctionSection { type_indexes },
+            |type_indices| FunctionSection { type_indices },
         )
         .parse(payload)
     }

@@ -134,7 +134,7 @@ mod tests {
                 assert_eq!(
                     module.sections[1],
                     Section::Function(FunctionSection {
-                        type_indexes: vec![0]
+                        type_indices: vec![0]
                     })
                 );
             },

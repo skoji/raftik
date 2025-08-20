@@ -45,7 +45,7 @@ pub enum ImportDesc {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct FunctionSection {
-    pub type_indexes: Vec<u32>,
+    pub type_indices: Vec<u32>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
