@@ -8,7 +8,15 @@ Implement only what’s essential, and keep the code so clear you can read it in
 
 ## Status
 
-🚧 **Work in progress** – early implementation. Actually, there's almost nothing here yet. :-P
+🚧 **Work in progress** – early implementation. 
+
+Currently, only WebAssembly binary parsing is implemented.
+You can run the following command to parse a WASM file and display the result:
+
+```
+cargo run <wasm file>
+```
+
 
 ## Name
 
