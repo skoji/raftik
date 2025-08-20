@@ -14,15 +14,16 @@ use super::{
     section_parser_trait::ParseSection,
     types::{
         parse_function_type, parse_global_type, parse_memory_type, parse_reference_type,
-        parse_table_type,
+        parse_table_type, parse_value_type,
     },
 };
 use crate::ast::{
     Module,
     section::{
-        Element, ElementItems, ElementKind, ElementSection, Export, ExportDesc, ExportSection,
-        FunctionSection, Global, GlobalSection, Import, ImportDesc, ImportSection, MemorySection,
-        Section, SectionID, StartSection, TableSection, TypeSection, UnknownSection,
+        CodeSection, Element, ElementItems, ElementKind, ElementSection, Export, ExportDesc,
+        ExportSection, FunctionBody, FunctionSection, Global, GlobalSection, Import, ImportDesc,
+        ImportSection, Locals, MemorySection, Section, SectionID, StartSection, TableSection,
+        TypeSection, UnknownSection,
     },
     types::ReferenceType,
 };
@@ -233,6 +234,36 @@ fn parse_element(input: &[u8]) -> IResult<&[u8], Element<'_>> {
     Ok((input, Element { kind, items }))
 }
 
+impl<'a> ParseSection<'a> for CodeSection<'a> {
+    fn parse_from_payload(payload: &'a [u8]) -> IResult<&'a [u8], Self> {
+        map(length_count(parse_varuint32, parse_function_body), |code| {
+            CodeSection { code }
+        })
+        .parse(payload)
+    }
+}
+
+fn parse_function_body(input: &[u8]) -> IResult<&[u8], FunctionBody<'_>> {
+    let (input, raw_function_body) = flat_map(parse_varuint32, take).parse(input)?;
+    let (_, function_body) = map(
+        all_consuming((
+            length_count(parse_varuint32, parse_locals),
+            parse_expression,
+        )),
+        |(locals, expression)| FunctionBody { locals, expression },
+    )
+    .parse(raw_function_body)?;
+    Ok((input, function_body))
+}
+
+fn parse_locals(input: &[u8]) -> IResult<&[u8], Locals> {
+    map(
+        (parse_varuint32, parse_value_type),
+        |(count, value_type)| Locals { count, value_type },
+    )
+    .parse(input)
+}
+
 fn parse_magic(input: &[u8]) -> IResult<&[u8], &[u8; 4]> {
     map(tag(&b"\0asm"[..]), |magic: &[u8]| {
         magic.try_into().expect("magic should be exactly 4 bytes")
@@ -262,6 +293,7 @@ fn parse_section(input: &[u8]) -> IResult<&[u8], Section<'_>> {
         SectionID::Export => Section::Export(ExportSection::parse_all(payload)?),
         SectionID::Start => Section::Start(StartSection::parse_all(payload)?),
         SectionID::Element => Section::Element(ElementSection::parse_all(payload)?),
+        SectionID::Code => Section::Code(CodeSection::parse_all(payload)?),
         _ => Section::Unknown(UnknownSection { id, payload }),
     };
     Ok((input, section))

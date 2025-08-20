@@ -3,6 +3,8 @@ use crate::ast::{
     types::{FunctionType, GlobalType, MemoryType, ReferenceType, TableType},
 };
 
+use super::types::ValueType;
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum Section<'a> {
     Type(TypeSection),
@@ -14,6 +16,7 @@ pub enum Section<'a> {
     Export(ExportSection),
     Start(StartSection),
     Element(ElementSection<'a>),
+    Code(CodeSection<'a>),
     Unknown(UnknownSection<'a>),
     // Other section coming
 }
@@ -119,6 +122,23 @@ pub enum ElementItems<'a> {
     Expressions(ReferenceType, Vec<Expression<'a>>),
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct CodeSection<'a> {
+    pub code: Vec<FunctionBody<'a>>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct FunctionBody<'a> {
+    // do not hold function size here.
+    pub locals: Vec<Locals>,
+    pub expression: Expression<'a>,
+}
+#[derive(Debug, PartialEq, Eq)]
+pub struct Locals {
+    pub count: u32,
+    pub value_type: ValueType,
+}
+
 // will be removed all section parser is implemented.
 #[derive(Debug, PartialEq, Eq)]
 pub struct UnknownSection<'a> {
@@ -178,6 +198,7 @@ impl Section<'_> {
             Section::Export(_) => SectionID::Export,
             Section::Start(_) => SectionID::Start,
             Section::Element(_) => SectionID::Element,
+            Section::Code(_) => SectionID::Code,
             Section::Unknown(unknown) => unknown.id,
         }
     }
