@@ -3,8 +3,9 @@ pub mod section;
 pub mod types;
 
 pub use section::{
-    CodeSection, DataCountSection, DataSection, ElementSection, ExportSection, FunctionSection,
-    GlobalSection, ImportSection, MemorySection, Section, StartSection, TableSection, TypeSection,
+    CodeSection, CustomSection, DataCountSection, DataSection, ElementSection, ExportSection,
+    FunctionSection, GlobalSection, ImportSection, MemorySection, Section, StartSection,
+    TableSection, TypeSection,
 };
 
 #[derive(Debug, PartialEq, Eq, Default)]
