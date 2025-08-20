@@ -234,8 +234,6 @@ fn parse_element(input: &[u8]) -> IResult<&[u8], Element<'_>> {
     Ok((input, Element { kind, items }))
 }
 
-//
-
 impl<'a> ParseSection<'a> for CodeSection<'a> {
     fn parse_from_payload(payload: &'a [u8]) -> IResult<&'a [u8], Self> {
         map(length_count(parse_varuint32, parse_function_body), |code| {
@@ -246,7 +244,7 @@ impl<'a> ParseSection<'a> for CodeSection<'a> {
 }
 
 fn parse_function_body(input: &[u8]) -> IResult<&[u8], FunctionBody<'_>> {
-    let (input, raw_function) = flat_map(parse_varuint32, take).parse(input)?;
+    let (input, raw_function_body) = flat_map(parse_varuint32, take).parse(input)?;
     let (_, function_body) = map(
         all_consuming((
             length_count(parse_varuint32, parse_locals),
@@ -254,7 +252,7 @@ fn parse_function_body(input: &[u8]) -> IResult<&[u8], FunctionBody<'_>> {
         )),
         |(locals, expression)| FunctionBody { locals, expression },
     )
-    .parse(raw_function)?;
+    .parse(raw_function_body)?;
     Ok((input, function_body))
 }
 
@@ -265,7 +263,6 @@ fn parse_locals(input: &[u8]) -> IResult<&[u8], Locals> {
     )
     .parse(input)
 }
-//
 
 fn parse_magic(input: &[u8]) -> IResult<&[u8], &[u8; 4]> {
     map(tag(&b"\0asm"[..]), |magic: &[u8]| {
