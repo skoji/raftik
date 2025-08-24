@@ -38,8 +38,8 @@ impl<'a> ModuleParsed<'a> {
 mod tests {
     use crate::ast::{
         CodeSection, DataCountSection, DataSection, ElementSection, ExportSection, FunctionSection,
-        GlobalSection, ImportSection, MemorySection, ModuleParsed, Section, StartSection, TableSection,
-        TypeSection,
+        GlobalSection, ImportSection, MemorySection, ModuleParsed, Section, StartSection,
+        TableSection, TypeSection,
         instructions::*,
         section::{
             DataMode, DataSegment, Element, ElementItems, ElementKind, Export, ExportDesc,
@@ -62,7 +62,9 @@ mod tests {
 
     #[test]
     fn test_minimal_wasm() {
-        with_wat("(module)", |module| assert_eq!(module, ModuleParsed::default()));
+        with_wat("(module)", |module| {
+            assert_eq!(module, ModuleParsed::default())
+        });
     }
 
     #[test]
