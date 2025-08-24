@@ -1,0 +1,10 @@
+[package]
+name = "raftik-core"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+nom = "8.0.0"
+
+[dev-dependencies]
+wat = "1.236.1"

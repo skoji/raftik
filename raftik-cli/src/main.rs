@@ -1,7 +1,7 @@
 use std::env;
 
-use raftik::ast::Module;
-use raftik::validation::validate_module;
+use raftik_core::ast::Module;
+use raftik_core::validation::validate_module;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
