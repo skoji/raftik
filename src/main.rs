@@ -1,8 +1,9 @@
 use std::env;
 
 use raftik::ast::Module;
+use raftik::validation::validate_module;
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
         eprintln!("Usage: {} <wasm_file>", args[0]);
@@ -10,11 +11,9 @@ fn main() {
     }
 
     let wasm_file = &args[1];
-    match std::fs::read(wasm_file) {
-        Ok(data) => match Module::from_slice(&data) {
-            Ok(module) => println!("{:#?}", module),
-            Err(e) => eprintln!("Error parsing module: {}", e),
-        },
-        Err(e) => eprintln!("Error reading file {}: {}", wasm_file, e),
-    }
+    let data = std::fs::read(wasm_file)?;
+    let module = Module::from_slice(&data)?;
+    println!("{:#?}", module);
+    validate_module(&module)?;
+    Ok(())
 }
