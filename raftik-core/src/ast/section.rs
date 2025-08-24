@@ -1,5 +1,5 @@
 use crate::ast::{
-    instructions::Expression,
+    instructions::RawExpression,
     types::{FunctionType, GlobalType, MemoryType, ReferenceType, TableType},
 };
 
@@ -70,7 +70,7 @@ pub struct GlobalSection<'a> {
 #[derive(Debug, PartialEq, Eq)]
 pub struct Global<'a> {
     pub global_type: GlobalType,
-    pub expression: Expression<'a>,
+    pub expression: RawExpression<'a>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -111,7 +111,7 @@ pub struct Element<'a> {
 pub enum ElementKind<'a> {
     Active {
         table_index: Option<u32>,
-        offset_expression: Expression<'a>,
+        offset_expression: RawExpression<'a>,
     },
     Declarative,
     Passive,
@@ -120,7 +120,7 @@ pub enum ElementKind<'a> {
 #[derive(Debug, PartialEq, Eq)]
 pub enum ElementItems<'a> {
     Functions(Vec<u32>),
-    Expressions(ReferenceType, Vec<Expression<'a>>),
+    Expressions(ReferenceType, Vec<RawExpression<'a>>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -132,7 +132,7 @@ pub struct CodeSection<'a> {
 pub struct FunctionBody<'a> {
     // do not hold function size here.
     pub locals: Vec<Locals>,
-    pub expression: Expression<'a>,
+    pub expression: RawExpression<'a>,
 }
 #[derive(Debug, PartialEq, Eq)]
 pub struct Locals {
@@ -155,7 +155,7 @@ pub struct DataSegment<'a> {
 pub enum DataMode<'a> {
     Active {
         memory_index: Option<u32>,
-        offset_expression: Expression<'a>,
+        offset_expression: RawExpression<'a>,
     },
     Passive,
 }

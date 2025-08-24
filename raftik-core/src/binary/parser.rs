@@ -191,7 +191,7 @@ mod tests {
                             val_type: ValueType::Number(NumberType::I32),
                             mutability: Mutability::Const,
                         },
-                        expression: Expression {
+                        expression: RawExpression {
                             instructions: &[0x41, 0x20][..]
                         }
                     }]
@@ -247,7 +247,7 @@ mod tests {
                         elements: vec![Element {
                             kind: ElementKind::Active {
                                 table_index: None,
-                                offset_expression: Expression {
+                                offset_expression: RawExpression {
                                     instructions: &[0x41, 0x00][..]
                                 }
                             },
@@ -287,7 +287,7 @@ mod tests {
                         elements: vec![Element {
                             kind: ElementKind::Active {
                                 table_index: Some(1),
-                                offset_expression: Expression {
+                                offset_expression: RawExpression {
                                     instructions: &[0x41, 0x00][..]
                                 }
                             },
@@ -327,13 +327,13 @@ mod tests {
                         elements: vec![Element {
                             kind: ElementKind::Active {
                                 table_index: None,
-                                offset_expression: Expression {
+                                offset_expression: RawExpression {
                                     instructions: &[0x41, 0x00][..]
                                 }
                             },
                             items: ElementItems::Expressions(
                                 ReferenceType::FuncRef,
-                                vec![Expression {
+                                vec![RawExpression {
                                     instructions: &[0xd2, 0][..]
                                 }]
                             ),
@@ -357,7 +357,7 @@ mod tests {
                             kind: ElementKind::Passive,
                             items: ElementItems::Expressions(
                                 ReferenceType::FuncRef,
-                                vec![Expression {
+                                vec![RawExpression {
                                     instructions: &[0xd2, 0][..]
                                 }]
                             ),
@@ -380,13 +380,13 @@ mod tests {
                         elements: vec![Element {
                             kind: ElementKind::Active {
                                 table_index: Some(1),
-                                offset_expression: Expression {
+                                offset_expression: RawExpression {
                                     instructions: &[0x41, 0x00][..]
                                 }
                             },
                             items: ElementItems::Expressions(
                                 ReferenceType::FuncRef,
-                                vec![Expression {
+                                vec![RawExpression {
                                     instructions: &[0xd2, 0][..]
                                 }]
                             ),
@@ -410,7 +410,7 @@ mod tests {
                             kind: ElementKind::Declarative,
                             items: ElementItems::Expressions(
                                 ReferenceType::FuncRef,
-                                vec![Expression {
+                                vec![RawExpression {
                                     instructions: &[0xd2, 0][..]
                                 }]
                             ),
@@ -435,7 +435,7 @@ mod tests {
                                 count: 2,
                                 value_type: ValueType::Number(NumberType::F64)
                             }],
-                            expression: Expression {
+                            expression: RawExpression {
                                 instructions: &[0x20, 0, 0x20, 1, 0x6a][..]
                             }
                         }]
@@ -460,7 +460,7 @@ mod tests {
                     DataSegment {
                         mode: DataMode::Active {
                             memory_index: None,
-                            offset_expression: Expression {
+                            offset_expression: RawExpression {
                                 instructions: &[0x41, 0][..]
                             }
                         },
@@ -473,7 +473,7 @@ mod tests {
                     DataSegment {
                         mode: DataMode::Active {
                             memory_index: Some(1),
-                            offset_expression: Expression {
+                            offset_expression: RawExpression {
                                 instructions: &[0x41, 0][..]
                             }
                         },
