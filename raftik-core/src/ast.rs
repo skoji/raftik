@@ -9,6 +9,6 @@ pub use section::{
 };
 
 #[derive(Debug, PartialEq, Eq, Default)]
-pub struct Module<'a> {
+pub struct ModuleParsed<'a> {
     pub sections: Vec<Section<'a>>,
 }

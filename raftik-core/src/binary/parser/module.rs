@@ -18,7 +18,7 @@ use super::{
     },
 };
 use crate::ast::{
-    Module,
+    ModuleParsed,
     section::{
         CodeSection, CustomSection, DataCountSection, DataMode, DataSection, DataSegment, Element,
         ElementItems, ElementKind, ElementSection, Export, ExportDesc, ExportSection, FunctionBody,
@@ -28,10 +28,10 @@ use crate::ast::{
     types::ReferenceType,
 };
 
-pub fn parse_module(input: &'_ [u8]) -> IResult<&[u8], Module<'_>> {
+pub fn parse_module(input: &'_ [u8]) -> IResult<&[u8], ModuleParsed<'_>> {
     map(
         all_consuming((parse_magic, parse_version, parse_sections)),
-        |(_, _, sections)| Module { sections },
+        |(_, _, sections)| ModuleParsed { sections },
     )
     .parse(input)
 }

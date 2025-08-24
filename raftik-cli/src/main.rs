@@ -1,6 +1,6 @@
 use std::env;
 
-use raftik_core::ast::Module;
+use raftik_core::ast::ModuleParsed;
 use raftik_core::validation::validate_module;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -12,7 +12,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let wasm_file = &args[1];
     let data = std::fs::read(wasm_file)?;
-    let module = Module::from_slice(&data)?;
+    let module = ModuleParsed::from_slice(&data)?;
     println!("{:#?}", module);
     validate_module(&module)?;
     Ok(())

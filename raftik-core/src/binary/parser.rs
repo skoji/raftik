@@ -8,9 +8,9 @@ mod types;
 
 use module::parse_module;
 
-use crate::ast::Module;
+use crate::ast::ModuleParsed;
 
-impl<'a> Module<'a> {
+impl<'a> ModuleParsed<'a> {
     pub fn from_slice(input: &'a [u8]) -> Result<Self, String> {
         let (_, module) =
             parse_module(input).map_err(|e| format!("Failed to parse module: {:?}", e))?;
@@ -38,7 +38,7 @@ impl<'a> Module<'a> {
 mod tests {
     use crate::ast::{
         CodeSection, DataCountSection, DataSection, ElementSection, ExportSection, FunctionSection,
-        GlobalSection, ImportSection, MemorySection, Module, Section, StartSection, TableSection,
+        GlobalSection, ImportSection, MemorySection, ModuleParsed, Section, StartSection, TableSection,
         TypeSection,
         instructions::*,
         section::{
@@ -48,13 +48,13 @@ mod tests {
         types::*,
     };
 
-    fn with_wat(wat: impl AsRef<str>, test: impl Fn(Module)) {
+    fn with_wat(wat: impl AsRef<str>, test: impl Fn(ModuleParsed)) {
         let wasm = wat::parse_str(wat).unwrap();
-        let module = Module::from_slice(&wasm).unwrap();
+        let module = ModuleParsed::from_slice(&wasm).unwrap();
         test(module)
     }
 
-    impl Module<'_> {
+    impl ModuleParsed<'_> {
         pub fn find_section(&self, id: SectionID) -> Option<&Section<'_>> {
             self.sections.iter().find(|s| s.id() == id)
         }
@@ -62,7 +62,7 @@ mod tests {
 
     #[test]
     fn test_minimal_wasm() {
-        with_wat("(module)", |module| assert_eq!(module, Module::default()));
+        with_wat("(module)", |module| assert_eq!(module, ModuleParsed::default()));
     }
 
     #[test]
@@ -72,7 +72,7 @@ mod tests {
             |module| {
                 assert_eq!(
                     module,
-                    Module {
+                    ModuleParsed {
                         sections: vec![Section::Type(TypeSection {
                             types: vec![FunctionType {
                                 params: vec![
@@ -451,7 +451,7 @@ mod tests {
         let mut wasm = wat::parse_str(wat).unwrap();
         // wat does not generate DataCountSection, so adding one manually
         wasm.extend(vec![0x0c, 0x01, 0x03]); // section id 12, section size 1, 3: u32
-        let module = Module::from_slice(&wasm).unwrap();
+        let module = ModuleParsed::from_slice(&wasm).unwrap();
         let data_section = module.find_section(SectionID::Data).unwrap();
         assert_eq!(
             *data_section,

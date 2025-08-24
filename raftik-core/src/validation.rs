@@ -1,7 +1,7 @@
-use crate::ast::Module;
+use crate::ast::ModuleParsed;
 pub mod error;
 use error::Error;
 
-pub fn validate_module(_module: &Module) -> Result<(), Error> {
+pub fn validate_module(_module: &ModuleParsed) -> Result<(), Error> {
     Ok(())
 }
