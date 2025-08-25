@@ -8,9 +8,9 @@ mod types;
 
 use module::parse_module;
 
-use crate::ast::Module;
+use crate::ast::ModuleParsed;
 
-impl<'a> Module<'a> {
+impl<'a> ModuleParsed<'a> {
     pub fn from_slice(input: &'a [u8]) -> Result<Self, String> {
         let (_, module) =
             parse_module(input).map_err(|e| format!("Failed to parse module: {:?}", e))?;
@@ -38,8 +38,8 @@ impl<'a> Module<'a> {
 mod tests {
     use crate::ast::{
         CodeSection, DataCountSection, DataSection, ElementSection, ExportSection, FunctionSection,
-        GlobalSection, ImportSection, MemorySection, Module, Section, StartSection, TableSection,
-        TypeSection,
+        GlobalSection, ImportSection, MemorySection, ModuleParsed, Section, StartSection,
+        TableSection, TypeSection,
         instructions::*,
         section::{
             DataMode, DataSegment, Element, ElementItems, ElementKind, Export, ExportDesc,
@@ -48,13 +48,13 @@ mod tests {
         types::*,
     };
 
-    fn with_wat(wat: impl AsRef<str>, test: impl Fn(Module)) {
+    fn with_wat(wat: impl AsRef<str>, test: impl Fn(ModuleParsed)) {
         let wasm = wat::parse_str(wat).unwrap();
-        let module = Module::from_slice(&wasm).unwrap();
+        let module = ModuleParsed::from_slice(&wasm).unwrap();
         test(module)
     }
 
-    impl Module<'_> {
+    impl ModuleParsed<'_> {
         pub fn find_section(&self, id: SectionID) -> Option<&Section<'_>> {
             self.sections.iter().find(|s| s.id() == id)
         }
@@ -62,7 +62,9 @@ mod tests {
 
     #[test]
     fn test_minimal_wasm() {
-        with_wat("(module)", |module| assert_eq!(module, Module::default()));
+        with_wat("(module)", |module| {
+            assert_eq!(module, ModuleParsed::default())
+        });
     }
 
     #[test]
@@ -72,7 +74,7 @@ mod tests {
             |module| {
                 assert_eq!(
                     module,
-                    Module {
+                    ModuleParsed {
                         sections: vec![Section::Type(TypeSection {
                             types: vec![FunctionType {
                                 params: vec![
@@ -191,7 +193,7 @@ mod tests {
                             val_type: ValueType::Number(NumberType::I32),
                             mutability: Mutability::Const,
                         },
-                        expression: Expression {
+                        expression: RawExpression {
                             instructions: &[0x41, 0x20][..]
                         }
                     }]
@@ -247,7 +249,7 @@ mod tests {
                         elements: vec![Element {
                             kind: ElementKind::Active {
                                 table_index: None,
-                                offset_expression: Expression {
+                                offset_expression: RawExpression {
                                     instructions: &[0x41, 0x00][..]
                                 }
                             },
@@ -287,7 +289,7 @@ mod tests {
                         elements: vec![Element {
                             kind: ElementKind::Active {
                                 table_index: Some(1),
-                                offset_expression: Expression {
+                                offset_expression: RawExpression {
                                     instructions: &[0x41, 0x00][..]
                                 }
                             },
@@ -327,13 +329,13 @@ mod tests {
                         elements: vec![Element {
                             kind: ElementKind::Active {
                                 table_index: None,
-                                offset_expression: Expression {
+                                offset_expression: RawExpression {
                                     instructions: &[0x41, 0x00][..]
                                 }
                             },
                             items: ElementItems::Expressions(
                                 ReferenceType::FuncRef,
-                                vec![Expression {
+                                vec![RawExpression {
                                     instructions: &[0xd2, 0][..]
                                 }]
                             ),
@@ -357,7 +359,7 @@ mod tests {
                             kind: ElementKind::Passive,
                             items: ElementItems::Expressions(
                                 ReferenceType::FuncRef,
-                                vec![Expression {
+                                vec![RawExpression {
                                     instructions: &[0xd2, 0][..]
                                 }]
                             ),
@@ -380,13 +382,13 @@ mod tests {
                         elements: vec![Element {
                             kind: ElementKind::Active {
                                 table_index: Some(1),
-                                offset_expression: Expression {
+                                offset_expression: RawExpression {
                                     instructions: &[0x41, 0x00][..]
                                 }
                             },
                             items: ElementItems::Expressions(
                                 ReferenceType::FuncRef,
-                                vec![Expression {
+                                vec![RawExpression {
                                     instructions: &[0xd2, 0][..]
                                 }]
                             ),
@@ -410,7 +412,7 @@ mod tests {
                             kind: ElementKind::Declarative,
                             items: ElementItems::Expressions(
                                 ReferenceType::FuncRef,
-                                vec![Expression {
+                                vec![RawExpression {
                                     instructions: &[0xd2, 0][..]
                                 }]
                             ),
@@ -435,7 +437,7 @@ mod tests {
                                 count: 2,
                                 value_type: ValueType::Number(NumberType::F64)
                             }],
-                            expression: Expression {
+                            expression: RawExpression {
                                 instructions: &[0x20, 0, 0x20, 1, 0x6a][..]
                             }
                         }]
@@ -451,7 +453,7 @@ mod tests {
         let mut wasm = wat::parse_str(wat).unwrap();
         // wat does not generate DataCountSection, so adding one manually
         wasm.extend(vec![0x0c, 0x01, 0x03]); // section id 12, section size 1, 3: u32
-        let module = Module::from_slice(&wasm).unwrap();
+        let module = ModuleParsed::from_slice(&wasm).unwrap();
         let data_section = module.find_section(SectionID::Data).unwrap();
         assert_eq!(
             *data_section,
@@ -460,7 +462,7 @@ mod tests {
                     DataSegment {
                         mode: DataMode::Active {
                             memory_index: None,
-                            offset_expression: Expression {
+                            offset_expression: RawExpression {
                                 instructions: &[0x41, 0][..]
                             }
                         },
@@ -473,7 +475,7 @@ mod tests {
                     DataSegment {
                         mode: DataMode::Active {
                             memory_index: Some(1),
-                            offset_expression: Expression {
+                            offset_expression: RawExpression {
                                 instructions: &[0x41, 0][..]
                             }
                         },

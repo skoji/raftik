@@ -1,0 +1,7 @@
+[package]
+name = "raftik-cli"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+raftik-core.workspace = true
