@@ -1,6 +1,6 @@
 use super::Context;
 use super::error::ValidationError;
-use crate::ast::section::FunctionSection;
+use crate::ast::section::{CollectionSection, ExportSection, FunctionSection};
 
 pub fn validate_function_section(
     function_section: &FunctionSection,
@@ -9,14 +9,64 @@ pub fn validate_function_section(
     let type_section = context
         .type_section
         .ok_or(ValidationError::NoTypeSectionInFunctionSection)?;
-    let types_length = type_section.types.len();
     for (i, type_index) in function_section.type_indices.iter().enumerate() {
-        if types_length as u32 <= *type_index {
+        if type_section.item(*type_index).is_none() {
             return Err(ValidationError::TypeIndexOutOfBoundsInFunctionSection(
                 *type_index,
                 i,
-                types_length,
             ));
+        }
+    }
+    Ok(())
+}
+
+pub fn validate_export_section(
+    export_section: &ExportSection,
+    context: &Context,
+) -> Result<(), ValidationError> {
+    use crate::ast::section::ExportDesc;
+    for (i, export) in export_section.exports.iter().enumerate() {
+        match export.desc {
+            ExportDesc::FunctionIndex(index) => {
+                let function_section = context
+                    .function_section
+                    .ok_or(ValidationError::NoFunctionSectionInExportSection(i))?;
+                if function_section.item(index).is_none() {
+                    return Err(ValidationError::FunctionIndexOutOfBoundsInExportSection(
+                        index, i,
+                    ));
+                }
+            }
+            ExportDesc::TableIndex(index) => {
+                let table_section = context
+                    .table_section
+                    .ok_or(ValidationError::NoFunctionSectionInExportSection(i))?;
+                if table_section.item(index).is_none() {
+                    return Err(ValidationError::FunctionIndexOutOfBoundsInExportSection(
+                        index, i,
+                    ));
+                }
+            }
+            ExportDesc::GlobalIndex(index) => {
+                let global_section = context
+                    .global_section
+                    .ok_or(ValidationError::NoFunctionSectionInExportSection(i))?;
+                if global_section.item(index).is_none() {
+                    return Err(ValidationError::FunctionIndexOutOfBoundsInExportSection(
+                        index, i,
+                    ));
+                }
+            }
+            ExportDesc::MemoryIndex(index) => {
+                let memory_section = context
+                    .memory_section
+                    .ok_or(ValidationError::NoFunctionSectionInExportSection(i))?;
+                if memory_section.item(index).is_none() {
+                    return Err(ValidationError::FunctionIndexOutOfBoundsInExportSection(
+                        index, i,
+                    ));
+                }
+            }
         }
     }
     Ok(())

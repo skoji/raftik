@@ -2,15 +2,18 @@ pub mod error;
 mod section;
 
 use crate::ast::{
-    FunctionSection, ModuleParsed,
-    section::{Section, TypeSection},
+    FunctionSection, GlobalSection, MemorySection, ModuleParsed, Section, TableSection, TypeSection,
 };
+
 use error::ValidationError;
 
 #[derive(Default)]
 struct Context<'a> {
     pub type_section: Option<&'a TypeSection>,
     pub function_section: Option<&'a FunctionSection>,
+    pub table_section: Option<&'a TableSection>,
+    pub memory_section: Option<&'a MemorySection>,
+    pub global_section: Option<&'a GlobalSection<'a>>,
 }
 
 pub fn validate_module(module: &ModuleParsed) -> Result<(), ValidationError> {
@@ -23,10 +26,12 @@ pub fn validate_module(module: &ModuleParsed) -> Result<(), ValidationError> {
                 context.function_section = Some(function_section);
                 section::validate_function_section(function_section, &context)?
             }
-            Section::Table(_) => (),     // TODO; should validate
-            Section::Memory(_) => (),    // TODO; should validate
-            Section::Global(_) => (),    // TODO; should validate
-            Section::Export(_) => (),    // TODO; should validate
+            Section::Table(table_section) => context.table_section = Some(table_section), // TODO; should validate
+            Section::Memory(memory_section) => context.memory_section = Some(memory_section), // TODO; should validate
+            Section::Global(global_section) => context.global_section = Some(global_section), // TODO; should validate
+            Section::Export(export_section) => {
+                section::validate_export_section(export_section, &context)?
+            }
             Section::Start(_) => (),     // TODO; should validate
             Section::Element(_) => (),   // TODO; should validate
             Section::Code(_) => (),      // TODO; should validate
