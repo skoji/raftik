@@ -1,17 +1,13 @@
-#[derive(Debug, Clone)]
-pub struct Error {
-    pub message: String,
-}
+use thiserror::Error;
 
-impl std::error::Error for Error {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        // to be implemented
-        None
-    }
-}
-
-impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Validation error: {}", self.message)
-    }
+#[derive(Error, Debug)]
+pub enum ValidationError {
+    #[error("Function Section: No Type Section found")]
+    NoTypeSectionInFunctionSection,
+    #[error("Function Section: Type index {0} out of bounds at {1} for Type Section")]
+    TypeIndexOutOfBoundsInFunctionSection(u32, usize),
+    #[error("No Function Section found for Export Section at {0}")]
+    NoFunctionSectionInExportSection(usize),
+    #[error("Export Section: Function index {0} out of bounds at {1} for Function Section")]
+    FunctionIndexOutOfBoundsInExportSection(u32, usize),
 }

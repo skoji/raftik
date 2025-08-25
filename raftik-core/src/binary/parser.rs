@@ -48,16 +48,16 @@ mod tests {
         types::*,
     };
 
+    impl ModuleParsed<'_> {
+        pub fn sec_by_id(&self, id: SectionID) -> Option<&Section<'_>> {
+            self.sections.iter().find(|s| s.id() == id)
+        }
+    }
+
     fn with_wat(wat: impl AsRef<str>, test: impl Fn(ModuleParsed)) {
         let wasm = wat::parse_str(wat).unwrap();
         let module = ModuleParsed::from_slice(&wasm).unwrap();
         test(module)
-    }
-
-    impl ModuleParsed<'_> {
-        pub fn find_section(&self, id: SectionID) -> Option<&Section<'_>> {
-            self.sections.iter().find(|s| s.id() == id)
-        }
     }
 
     #[test]
@@ -242,7 +242,7 @@ mod tests {
         with_wat(
             "(module (table 1 funcref) (func $f0) (elem (i32.const 0) func $f0))",
             |module| {
-                let section = module.find_section(SectionID::Element).unwrap();
+                let section = module.sec_by_id(SectionID::Element).unwrap();
                 assert_eq!(
                     *section,
                     Section::Element(ElementSection {
@@ -264,7 +264,7 @@ mod tests {
     #[test]
     fn test_wasm_with_element_section_1() {
         with_wat("(module (func $f0) (elem func $f0))", |module| {
-            let section = module.find_section(SectionID::Element).unwrap();
+            let section = module.sec_by_id(SectionID::Element).unwrap();
             assert_eq!(
                 *section,
                 Section::Element(ElementSection {
@@ -282,7 +282,7 @@ mod tests {
         with_wat(
             "(module  (table $t0 1 funcref) (table $t1 1 funcref) (func $f0) (elem 1 (i32.const 0) func $f0))",
             |module| {
-                let section = module.find_section(SectionID::Element).unwrap();
+                let section = module.sec_by_id(SectionID::Element).unwrap();
                 assert_eq!(
                     *section,
                     Section::Element(ElementSection {
@@ -304,7 +304,7 @@ mod tests {
     #[test]
     fn test_wasm_with_element_section_3() {
         with_wat("(module (func $f0) (elem declare func $f0))", |module| {
-            let section = module.find_section(SectionID::Element).unwrap();
+            let section = module.sec_by_id(SectionID::Element).unwrap();
             assert_eq!(
                 *section,
                 Section::Element(ElementSection {
@@ -322,7 +322,7 @@ mod tests {
         with_wat(
             "(module (table 1 funcref) (func $f0) (func) (elem (i32.const 0) funcref (ref.func 0)))",
             |module| {
-                let section = module.find_section(SectionID::Element).unwrap();
+                let section = module.sec_by_id(SectionID::Element).unwrap();
                 assert_eq!(
                     *section,
                     Section::Element(ElementSection {
@@ -351,7 +351,7 @@ mod tests {
         with_wat(
             "(module (func $f0) (elem funcref (ref.func 0)))",
             |module| {
-                let section = module.find_section(SectionID::Element).unwrap();
+                let section = module.sec_by_id(SectionID::Element).unwrap();
                 assert_eq!(
                     *section,
                     Section::Element(ElementSection {
@@ -375,7 +375,7 @@ mod tests {
         with_wat(
             "(module  (table $t0 1 funcref) (table $t1 1 funcref) (func $f0) (elem 1 (i32.const 0) funcref (ref.func 0)))",
             |module| {
-                let section = module.find_section(SectionID::Element).unwrap();
+                let section = module.sec_by_id(SectionID::Element).unwrap();
                 assert_eq!(
                     *section,
                     Section::Element(ElementSection {
@@ -404,7 +404,7 @@ mod tests {
         with_wat(
             "(module (func $f0) (elem declare funcref (ref.func 0)))",
             |module| {
-                let section = module.find_section(SectionID::Element).unwrap();
+                let section = module.sec_by_id(SectionID::Element).unwrap();
                 assert_eq!(
                     *section,
                     Section::Element(ElementSection {
@@ -428,7 +428,7 @@ mod tests {
         with_wat(
             "(module (func (param i32) (param i32) (result i32) (local f64) (local f64) local.get 0 local.get 1 i32.add))",
             |module| {
-                let section = module.find_section(SectionID::Code).unwrap();
+                let section = module.sec_by_id(SectionID::Code).unwrap();
                 assert_eq!(
                     *section,
                     Section::Code(CodeSection {
@@ -454,7 +454,7 @@ mod tests {
         // wat does not generate DataCountSection, so adding one manually
         wasm.extend(vec![0x0c, 0x01, 0x03]); // section id 12, section size 1, 3: u32
         let module = ModuleParsed::from_slice(&wasm).unwrap();
-        let data_section = module.find_section(SectionID::Data).unwrap();
+        let data_section = module.sec_by_id(SectionID::Data).unwrap();
         assert_eq!(
             *data_section,
             Section::Data(DataSection {
@@ -484,7 +484,7 @@ mod tests {
                 ]
             })
         );
-        let data_count_section = module.find_section(SectionID::DataCount).unwrap();
+        let data_count_section = module.sec_by_id(SectionID::DataCount).unwrap();
         assert_eq!(
             *data_count_section,
             Section::DataCount(DataCountSection { count: 3 }),
