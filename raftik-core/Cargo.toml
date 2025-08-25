@@ -7,4 +7,5 @@ edition.workspace = true
 nom = "8.0.0"
 
 [dev-dependencies]
-wat = "1.236.1"
+wat = "1.237.0"
+
