@@ -2,20 +2,29 @@ use super::Context;
 use super::error::ValidationError;
 use crate::ast::section::{CollectionSection, ExportSection, FunctionSection};
 
+macro_rules! validate_index {
+    ($referring_section_name:expr, $section_field:expr, $section_name:expr, $index:expr, $i:expr) => {{
+        let section = $section_field.ok_or(ValidationError::ReferingSectionNotFound(
+            $referring_section_name,
+            $section_name,
+        ))?;
+        if section.item($index).is_none() {
+            return Err(ValidationError::IndexOutOfBoundsInSection(
+                $referring_section_name,
+                $section_name,
+                $index,
+                $i,
+            ));
+        }
+    }};
+}
+
 pub fn validate_function_section(
     function_section: &FunctionSection,
     context: &Context,
 ) -> Result<(), ValidationError> {
-    let type_section = context
-        .type_section
-        .ok_or(ValidationError::NoTypeSectionInFunctionSection)?;
     for (i, type_index) in function_section.type_indices.iter().enumerate() {
-        if type_section.item(*type_index).is_none() {
-            return Err(ValidationError::TypeIndexOutOfBoundsInFunctionSection(
-                *type_index,
-                i,
-            ));
-        }
+        validate_index!("Function", context.type_section, "Type", *type_index, i);
     }
     Ok(())
 }
@@ -28,44 +37,16 @@ pub fn validate_export_section(
     for (i, export) in export_section.exports.iter().enumerate() {
         match export.desc {
             ExportDesc::FunctionIndex(index) => {
-                let function_section = context
-                    .function_section
-                    .ok_or(ValidationError::NoFunctionSectionInExportSection(i))?;
-                if function_section.item(index).is_none() {
-                    return Err(ValidationError::FunctionIndexOutOfBoundsInExportSection(
-                        index, i,
-                    ));
-                }
+                validate_index!("Export", context.function_section, "Function", index, i)
             }
             ExportDesc::TableIndex(index) => {
-                let table_section = context
-                    .table_section
-                    .ok_or(ValidationError::NoTableSectionInExportSection(i))?;
-                if table_section.item(index).is_none() {
-                    return Err(ValidationError::TableIndexOutOfBoundsInExportSection(
-                        index, i,
-                    ));
-                }
+                validate_index!("Export", context.table_section, "Table", index, i);
             }
             ExportDesc::GlobalIndex(index) => {
-                let global_section = context
-                    .global_section
-                    .ok_or(ValidationError::NoGlobalSectionInExportSection(i))?;
-                if global_section.item(index).is_none() {
-                    return Err(ValidationError::GlobalIndexOutOfBoundsInExportSection(
-                        index, i,
-                    ));
-                }
+                validate_index!("Export", context.global_section, "Global", index, i);
             }
             ExportDesc::MemoryIndex(index) => {
-                let memory_section = context
-                    .memory_section
-                    .ok_or(ValidationError::NoMemorySectionInExportSection(i))?;
-                if memory_section.item(index).is_none() {
-                    return Err(ValidationError::MemoryIndexOutOfBoundsInExportSection(
-                        index, i,
-                    ));
-                }
+                validate_index!("Export", context.memory_section, "Memory", index, i);
             }
         }
     }
