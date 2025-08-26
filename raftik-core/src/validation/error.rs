@@ -2,7 +2,7 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ValidationError {
-    #[error("{referring} index {referring_index} out of bounds at {referred_index} for {referred}")]
+    #[error("index {referred_index} out of bounds in {referred} section (referenced from {referring} section at index {referring_index})")]
     IndexOutOfBoundsIn {
         referring: &'static str,
         referring_index: usize,
