@@ -3,14 +3,14 @@ use super::error::ValidationError;
 use crate::ast::section::{ExportSection, FunctionSection};
 
 macro_rules! validate_index {
-    ($field: expr, $refering: expr, $refering_index: expr, $refered: expr, $refered_index: expr) => {{
+    ($field: expr, $referring: expr, $referring_index: expr, $referred: expr, $referred_index: expr) => {{
         $field
-            .get($refered_index as usize)
+            .get($referred_index as usize)
             .ok_or(ValidationError::IndexOutOfBoundsIn {
-                refering: $refering,
-                refering_index: $refering_index,
-                refered: $refered,
-                refered_index: $refered_index,
+                referring: $referring,
+                referring_index: $referring_index,
+                referred: $referred,
+                referred_index: $referred_index,
             })?;
     }};
 }
