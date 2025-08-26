@@ -5,6 +5,10 @@ use crate::ast::{
 
 use super::types::ValueType;
 
+pub trait CollectionSection<'a, T> {
+    fn item(&'a self, index: u32) -> Option<&'a T>;
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum Section<'a> {
     Type(TypeSection),
@@ -27,9 +31,21 @@ pub struct TypeSection {
     pub types: Vec<FunctionType>,
 }
 
+impl CollectionSection<'_, FunctionType> for TypeSection {
+    fn item(&self, index: u32) -> Option<&FunctionType> {
+        self.types.get(index as usize)
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct ImportSection {
     pub imports: Vec<Import>,
+}
+
+impl CollectionSection<'_, Import> for ImportSection {
+    fn item(&self, index: u32) -> Option<&Import> {
+        self.imports.get(index as usize)
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -52,9 +68,21 @@ pub struct FunctionSection {
     pub type_indices: Vec<u32>,
 }
 
+impl CollectionSection<'_, u32> for FunctionSection {
+    fn item(&self, index: u32) -> Option<&u32> {
+        self.type_indices.get(index as usize)
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct TableSection {
     pub tables: Vec<TableType>,
+}
+
+impl CollectionSection<'_, TableType> for TableSection {
+    fn item(&self, index: u32) -> Option<&TableType> {
+        self.tables.get(index as usize)
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -62,9 +90,21 @@ pub struct MemorySection {
     pub memories: Vec<MemoryType>,
 }
 
+impl CollectionSection<'_, MemoryType> for MemorySection {
+    fn item(&self, index: u32) -> Option<&MemoryType> {
+        self.memories.get(index as usize)
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct GlobalSection<'a> {
     pub globals: Vec<Global<'a>>,
+}
+
+impl<'a> CollectionSection<'a, Global<'a>> for GlobalSection<'a> {
+    fn item(&'a self, index: u32) -> Option<&'a Global<'a>> {
+        self.globals.get(index as usize)
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -76,6 +116,12 @@ pub struct Global<'a> {
 #[derive(Debug, PartialEq, Eq)]
 pub struct ExportSection {
     pub exports: Vec<Export>,
+}
+
+impl CollectionSection<'_, Export> for ExportSection {
+    fn item(&self, index: u32) -> Option<&Export> {
+        self.exports.get(index as usize)
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -99,6 +145,12 @@ pub struct StartSection {
 #[derive(Debug, PartialEq, Eq)]
 pub struct ElementSection<'a> {
     pub elements: Vec<Element<'a>>,
+}
+
+impl<'a> CollectionSection<'a, Element<'a>> for ElementSection<'a> {
+    fn item(&'a self, index: u32) -> Option<&'a Element<'a>> {
+        self.elements.get(index as usize)
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -128,6 +180,12 @@ pub struct CodeSection<'a> {
     pub code: Vec<FunctionBody<'a>>,
 }
 
+impl<'a> CollectionSection<'a, FunctionBody<'a>> for CodeSection<'a> {
+    fn item(&'a self, index: u32) -> Option<&'a FunctionBody<'a>> {
+        self.code.get(index as usize)
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct FunctionBody<'a> {
     // do not hold function size here.
@@ -143,6 +201,12 @@ pub struct Locals {
 #[derive(Debug, PartialEq, Eq)]
 pub struct DataSection<'a> {
     pub segments: Vec<DataSegment<'a>>,
+}
+
+impl<'a> CollectionSection<'a, DataSegment<'a>> for DataSection<'a> {
+    fn item(&'a self, index: u32) -> Option<&'a DataSegment<'a>> {
+        self.segments.get(index as usize)
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
