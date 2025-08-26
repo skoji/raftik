@@ -40,9 +40,9 @@ pub fn validate_export_section(
             ExportDesc::TableIndex(index) => {
                 let table_section = context
                     .table_section
-                    .ok_or(ValidationError::NoFunctionSectionInExportSection(i))?;
+                    .ok_or(ValidationError::NoTableSectionInExportSection(i))?;
                 if table_section.item(index).is_none() {
-                    return Err(ValidationError::FunctionIndexOutOfBoundsInExportSection(
+                    return Err(ValidationError::TableIndexOutOfBoundsInExportSection(
                         index, i,
                     ));
                 }
@@ -50,9 +50,9 @@ pub fn validate_export_section(
             ExportDesc::GlobalIndex(index) => {
                 let global_section = context
                     .global_section
-                    .ok_or(ValidationError::NoFunctionSectionInExportSection(i))?;
+                    .ok_or(ValidationError::NoGlobalSectionInExportSection(i))?;
                 if global_section.item(index).is_none() {
-                    return Err(ValidationError::FunctionIndexOutOfBoundsInExportSection(
+                    return Err(ValidationError::GlobalIndexOutOfBoundsInExportSection(
                         index, i,
                     ));
                 }
@@ -60,9 +60,9 @@ pub fn validate_export_section(
             ExportDesc::MemoryIndex(index) => {
                 let memory_section = context
                     .memory_section
-                    .ok_or(ValidationError::NoFunctionSectionInExportSection(i))?;
+                    .ok_or(ValidationError::NoMemorySectionInExportSection(i))?;
                 if memory_section.item(index).is_none() {
-                    return Err(ValidationError::FunctionIndexOutOfBoundsInExportSection(
+                    return Err(ValidationError::MemoryIndexOutOfBoundsInExportSection(
                         index, i,
                     ));
                 }
