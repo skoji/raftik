@@ -1,21 +1,17 @@
 use super::Context;
 use super::error::ValidationError;
-use crate::ast::section::{CollectionSection, ExportSection, FunctionSection};
+use crate::ast::section::{ExportSection, FunctionSection};
 
 macro_rules! validate_index {
-    ($referring_section_name:expr, $section_field:expr, $section_name:expr, $index:expr, $i:expr) => {{
-        let section = $section_field.ok_or(ValidationError::ReferingSectionNotFound(
-            $referring_section_name,
-            $section_name,
-        ))?;
-        if section.item($index).is_none() {
-            return Err(ValidationError::IndexOutOfBoundsInSection(
-                $referring_section_name,
-                $section_name,
-                $index,
-                $i,
-            ));
-        }
+    ($field: expr, $referring: expr, $referring_index: expr, $referred: expr, $referred_index: expr) => {{
+        $field
+            .get($referred_index as usize)
+            .ok_or(ValidationError::IndexOutOfBoundsIn {
+                referring: $referring,
+                referring_index: $referring_index,
+                referred: $referred,
+                referred_index: $referred_index,
+            })?;
     }};
 }
 
@@ -24,7 +20,7 @@ pub fn validate_function_section(
     context: &Context,
 ) -> Result<(), ValidationError> {
     for (i, type_index) in function_section.type_indices.iter().enumerate() {
-        validate_index!("Function", context.type_section, "Type", *type_index, i);
+        validate_index!(context.types, "Function", i, "Type", *type_index);
     }
     Ok(())
 }
@@ -34,19 +30,20 @@ pub fn validate_export_section(
     context: &Context,
 ) -> Result<(), ValidationError> {
     use crate::ast::section::ExportDesc;
+    let r = "Export";
     for (i, export) in export_section.exports.iter().enumerate() {
         match export.desc {
             ExportDesc::FunctionIndex(index) => {
-                validate_index!("Export", context.function_section, "Function", index, i)
+                validate_index!(context.functions, r, i, "Function", index)
             }
             ExportDesc::TableIndex(index) => {
-                validate_index!("Export", context.table_section, "Table", index, i);
+                validate_index!(context.tables, r, i, "Table", index);
             }
             ExportDesc::GlobalIndex(index) => {
-                validate_index!("Export", context.global_section, "Global", index, i);
+                validate_index!(context.globals, r, i, "Global", index);
             }
             ExportDesc::MemoryIndex(index) => {
-                validate_index!("Export", context.memory_section, "Memory", index, i);
+                validate_index!(context.memories, r, i, "Memory", index);
             }
         }
     }

@@ -2,8 +2,13 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ValidationError {
-    #[error("{0} Section: No {1} Section found")]
-    ReferingSectionNotFound(&'static str, &'static str),
-    #[error("{0} Section: {1} index {2} out of bounds at {3} for {1} Section")]
-    IndexOutOfBoundsInSection(&'static str, &'static str, u32, usize),
+    #[error(
+        "index {referred_index} out of bounds in {referred} section (referenced from {referring} section at index {referring_index})"
+    )]
+    IndexOutOfBoundsIn {
+        referring: &'static str,
+        referring_index: usize,
+        referred: &'static str,
+        referred_index: u32,
+    },
 }

@@ -2,33 +2,68 @@ pub mod error;
 mod section;
 
 use crate::ast::{
-    FunctionSection, GlobalSection, MemorySection, ModuleParsed, Section, TableSection, TypeSection,
+    ModuleParsed, Section,
+    types::{FunctionType, GlobalType, MemoryType, TableType, ValueType},
 };
 
 use error::ValidationError;
 
 #[derive(Default)]
 struct Context<'a> {
-    pub type_section: Option<&'a TypeSection>,
-    pub function_section: Option<&'a FunctionSection>,
-    pub table_section: Option<&'a TableSection>,
-    pub memory_section: Option<&'a MemorySection>,
-    pub global_section: Option<&'a GlobalSection<'a>>,
+    pub types: Vec<&'a FunctionType>,
+    pub functions: Vec<&'a u32>,
+    pub tables: Vec<&'a TableType>,
+    pub memories: Vec<&'a MemoryType>,
+    pub globals: Vec<&'a GlobalType>,
+    #[allow(dead_code)]
+    pub locals: Vec<&'a ValueType>,
 }
 
-pub fn validate_module(module: &ModuleParsed) -> Result<(), ValidationError> {
+fn initialize_context<'a>(module: &'a ModuleParsed<'a>) -> Result<Context<'a>, ValidationError> {
     let mut context = Context::default();
     for section in module.sections.iter() {
         match section {
-            Section::Type(type_section) => context.type_section = Some(type_section), // no validation needed.
+            Section::Type(type_section) => context.types = type_section.types.iter().collect(),
+            Section::Import(_) => (),
+            Section::Function(function_section) => {
+                context.functions = function_section.type_indices.iter().collect();
+            }
+            Section::Table(table_section) => context.tables = table_section.tables.iter().collect(),
+            Section::Memory(memory_section) => {
+                context.memories = memory_section.memories.iter().collect()
+            }
+            Section::Global(global_section) => {
+                context.globals = global_section
+                    .globals
+                    .iter()
+                    .map(|g| &g.global_type)
+                    .collect()
+            }
+            Section::Export(_) => (),
+            Section::Start(_) => (),
+            Section::Element(_) => (),
+            Section::Code(_) => (),
+            Section::Data(_) => (),
+            Section::DataCount(_) => (),
+            Section::Custom(_) => (),
+        }
+    }
+    Ok(context)
+}
+
+pub fn validate_module(module: &ModuleParsed) -> Result<(), ValidationError> {
+    #[allow(unused_mut)]
+    let mut context = initialize_context(module)?;
+    for section in module.sections.iter() {
+        match section {
+            Section::Type(_) => (),   // no need to validate
             Section::Import(_) => (), // TODO; should validate
             Section::Function(function_section) => {
-                context.function_section = Some(function_section);
                 section::validate_function_section(function_section, &context)?
             }
-            Section::Table(table_section) => context.table_section = Some(table_section), // TODO; should validate
-            Section::Memory(memory_section) => context.memory_section = Some(memory_section), // TODO; should validate
-            Section::Global(global_section) => context.global_section = Some(global_section), // TODO; should validate
+            Section::Table(_) => (),  // TODO; should validate
+            Section::Memory(_) => (), // TODO; should validate
+            Section::Global(_) => (), // TODO; should validate
             Section::Export(export_section) => {
                 section::validate_export_section(export_section, &context)?
             }
