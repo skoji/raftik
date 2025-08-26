@@ -1,6 +1,9 @@
 use super::Context;
 use super::error::ValidationError;
-use crate::ast::section::{ExportSection, FunctionSection};
+use crate::ast::{
+    CodeSection,
+    section::{ExportSection, FunctionSection},
+};
 
 macro_rules! validate_index {
     ($field: expr, $referring: expr, $referring_index: expr, $referred: expr, $referred_index: expr) => {{
@@ -47,5 +50,37 @@ pub fn validate_export_section(
             }
         }
     }
+    Ok(())
+}
+
+pub fn validate_code_section<'a>(
+    code_section: &'a CodeSection<'a>,
+    context: &mut Context<'a>,
+) -> Result<(), ValidationError> {
+    let funcs_declared = context.functions.len();
+    let code_bodies = code_section.code.len();
+    if funcs_declared != code_bodies {
+        return Err(ValidationError::CodeSectionLengthMismatch {
+            funcs_declared,
+            code_bodies,
+        });
+    }
+    for (i, funcbody) in code_section.code.iter().enumerate() {
+        let type_index = context.functions[i];
+        let func_type = context.types[*type_index as usize];
+        context.locals.clear();
+        for local in funcbody.locals.iter() {
+            for _ in 0..local.count {
+                context.locals.push(&local.value_type)
+            }
+        }
+        super::instruction::validate_raw_expression(
+            context,
+            func_type,
+            &funcbody.expression,
+            format!("at code section #{}", i).to_string(),
+        )?;
+    }
+    context.locals.clear();
     Ok(())
 }

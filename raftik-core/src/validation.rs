@@ -1,4 +1,5 @@
 pub mod error;
+mod instruction;
 mod section;
 
 use crate::ast::{
@@ -67,9 +68,11 @@ pub fn validate_module(module: &ModuleParsed) -> Result<(), ValidationError> {
             Section::Export(export_section) => {
                 section::validate_export_section(export_section, &context)?
             }
-            Section::Start(_) => (),     // TODO; should validate
-            Section::Element(_) => (),   // TODO; should validate
-            Section::Code(_) => (),      // TODO; should validate
+            Section::Start(_) => (),   // TODO; should validate
+            Section::Element(_) => (), // TODO; should validate
+            Section::Code(code_section) => {
+                section::validate_code_section(code_section, &mut context)?
+            }
             Section::Data(_) => (),      // TODO; should validate
             Section::DataCount(_) => (), // TODO; should validate
             Section::Custom(_) => (),    // no need to validate

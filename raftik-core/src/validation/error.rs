@@ -11,4 +11,11 @@ pub enum ValidationError {
         referred: &'static str,
         referred_index: u32,
     },
+    #[error(
+        "code section length mismatch: functions declared: {funcs_declared}, code bodies: {code_bodies}"
+    )]
+    CodeSectionLengthMismatch {
+        funcs_declared: usize,
+        code_bodies: usize,
+    },
 }
