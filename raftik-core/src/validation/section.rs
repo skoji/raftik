@@ -68,12 +68,17 @@ pub fn validate_code_section<'a>(
     for (i, funcbody) in code_section.code.iter().enumerate() {
         let type_index = context.functions[i];
         let func_type = context.types[*type_index as usize];
+
         context.locals.clear();
+        for param in func_type.params.iter() {
+            context.locals.push(param);
+        }
         for local in funcbody.locals.iter() {
             for _ in 0..local.count {
                 context.locals.push(&local.value_type)
             }
         }
+
         super::instruction::validate_raw_expression(
             context,
             func_type,
