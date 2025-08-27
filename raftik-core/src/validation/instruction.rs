@@ -4,12 +4,14 @@ use super::error::ValidationError;
 use crate::ast::instructions::RawExpression;
 use crate::ast::types::{FunctionType, ValueType};
 
+#[allow(dead_code)]
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 enum StackValue {
     Unknown,
     Value(ValueType),
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Default)]
 struct ControlFrame {
     pub start_types: Vec<ValueType>,
@@ -18,6 +20,7 @@ struct ControlFrame {
     pub unreachable: bool,
 }
 
+#[allow(dead_code)]
 trait ValueStack {
     fn push_val(&mut self, value: StackValue);
     fn pop_val(&mut self) -> Result<StackValue, ValidationError>;
@@ -25,10 +28,11 @@ trait ValueStack {
     fn push_vals(&mut self, values: &[StackValue]);
     fn pop_vals(
         &mut self,
-        expected_values: &Vec<StackValue>,
+        expected_values: &[StackValue],
     ) -> Result<Vec<StackValue>, ValidationError>;
 }
 
+#[allow(dead_code)]
 trait ControlStack {
     fn push_ctrl(&mut self, frame: ControlFrame);
     fn pop_ctrl(&mut self) -> Result<ControlFrame, ValidationError>;

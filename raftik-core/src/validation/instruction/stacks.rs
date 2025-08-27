@@ -9,6 +9,7 @@ macro_rules! controls_last {
     }};
 }
 
+#[allow(dead_code)]
 struct TheStack {
     values: Vec<StackValue>,
     controls: Vec<ControlFrame>,
@@ -63,7 +64,7 @@ impl ValueStack for TheStack {
 
     fn pop_vals(
         &mut self,
-        expected_values: &Vec<StackValue>,
+        expected_values: &[StackValue],
     ) -> Result<Vec<StackValue>, ValidationError> {
         expected_values
             .iter()
@@ -83,11 +84,12 @@ impl ControlStack for TheStack {
             return Err(ValidationError::ControlStackUnderflow);
         };
         self.pop_vals(
-            &frame
+            frame
                 .end_types
                 .iter()
                 .map(|v| StackValue::Value(*v))
-                .collect(),
+                .collect::<Vec<_>>()
+                .as_ref(),
         )?;
 
         if self.values.len() != frame.height_of_value_stack {
