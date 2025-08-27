@@ -18,4 +18,15 @@ pub enum ValidationError {
         funcs_declared: usize,
         code_bodies: usize,
     },
+    #[error("control stack underflow")]
+    ControlStackUnderflow,
+
+    #[error("value stack underflow")]
+    ValueStackUnderflow,
+
+    #[error("pop value expected {expected:?}, actual  {actual:?}")]
+    PopValueTypeMismatch {
+        expected: crate::ast::types::ValueType,
+        actual: crate::ast::types::ValueType,
+    },
 }
