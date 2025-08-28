@@ -26,7 +26,7 @@ fn initialize_context<'a>(module: &'a ModuleParsed<'a>) -> Result<Context<'a>, V
             Section::Type(type_section) => context.types = type_section.types.iter().collect(),
             Section::Import(_) => (),
             Section::Function(function_section) => {
-                context.functions = function_section.type_indices.iter().cloned().collect();
+                context.functions = function_section.type_indices.to_vec()
             }
             Section::Table(table_section) => context.tables = table_section.tables.iter().collect(),
             Section::Memory(memory_section) => {
