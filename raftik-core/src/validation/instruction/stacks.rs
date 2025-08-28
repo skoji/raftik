@@ -46,7 +46,7 @@ impl ValueStack for TheStack {
     fn pop_expect_val(&mut self, expected: StackValue) -> Result<StackValue, ValidationError> {
         let actual = self.pop_val()?;
         match (&actual, &expected) {
-            (StackValue::Unknown, _) | (_, StackValue::Unknown) => Ok(actual), // 返したい方に合わせて
+            (StackValue::Unknown, _) | (_, StackValue::Unknown) => Ok(actual),
             (StackValue::Value(a), StackValue::Value(b)) if a == b => Ok(actual),
             (StackValue::Value(a), StackValue::Value(b)) => {
                 Err(ValidationError::PopValueTypeMismatch {
@@ -90,7 +90,7 @@ impl ControlStack for TheStack {
                 .collect::<Vec<_>>()
                 .as_ref(),
         )?;
-        let frame = self.controls.pop().expect("should exists");
+        let frame = self.controls.pop().expect("should exist");
         if self.values.len() != frame.height_of_value_stack {
             Err(ValidationError::ValueStackUnderflow)
         } else {
