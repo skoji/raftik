@@ -101,7 +101,7 @@ fn validate_instructions(
 }
 
 pub fn validate_raw_expression(
-    #[allow(unused_mut)] mut ctx: &mut Context,
+    ctx: &mut Context,
     t: &FunctionType,
     expr: &RawExpression,
     desc_on_error: String,

@@ -52,7 +52,6 @@ fn initialize_context<'a>(module: &'a ModuleParsed<'a>) -> Result<Context<'a>, V
 }
 
 pub fn validate_module(module: &ModuleParsed) -> Result<(), ValidationError> {
-    #[allow(unused_mut)]
     let mut context = initialize_context(module)?;
     for section in module.sections.iter() {
         match section {

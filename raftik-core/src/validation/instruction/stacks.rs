@@ -5,7 +5,6 @@ macro_rules! controls_last {
     ($controls: expr) => {{ $controls.last().ok_or(VInstError::ControlStackUnderflow) }};
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
 struct TheStack {
     values: Vec<StackValue>,
