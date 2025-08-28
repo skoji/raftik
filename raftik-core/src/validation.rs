@@ -78,3 +78,76 @@ pub fn validate_module(module: &ModuleParsed) -> Result<(), ValidationError> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        ast::{ModuleParsed, section::SectionID, types::*},
+        validation::error::VInstError,
+    };
+
+    impl ModuleParsed<'_> {
+        pub fn sec_by_id(&self, id: SectionID) -> Option<&Section<'_>> {
+            self.sections.iter().find(|s| s.id() == id)
+        }
+    }
+
+    fn with_wat(wat: impl AsRef<str>, test: impl Fn(ModuleParsed)) {
+        let wasm = wat::parse_str(wat).unwrap();
+        let module = ModuleParsed::from_slice(&wasm).unwrap();
+        test(module)
+    }
+
+    #[test]
+    fn test_minimal_wasm() {
+        with_wat("(module)", |module| {
+            assert!(validate_module(&module).is_ok());
+        });
+    }
+
+    #[test]
+    fn test_add_module() {
+        with_wat(
+            "
+(module
+  (func $add (param $lhs i32) (param $rhs i32) (result i32)
+    local.get $lhs
+    local.get $rhs
+    i32.add)
+  (export \"add\" (func $add))
+)
+",
+            |module| assert!(validate_module(&module).is_ok()),
+        );
+    }
+
+    #[test]
+    fn test_invalid_add_module() {
+        with_wat(
+            "
+(module
+  (func $add (param $lhs i32) (param $rhs i64) (result i32)
+    local.get $lhs
+    local.get $rhs
+    i32.add)
+  (export \"add\" (func $add))
+)
+",
+            |module| match validate_module(&module) {
+                Ok(_) => unreachable!("should produce error"),
+                Err(e) => match e {
+                    ValidationError::InstructionValidationError { error, .. } => {
+                        if let VInstError::PopValueTypeMismatch { expected, actual } = error {
+                            assert_eq!(ValueType::Number(NumberType::I32), expected);
+                            assert_eq!(ValueType::Number(NumberType::I64), actual);
+                        } else {
+                            unreachable!("unexpected VInstError: {:?}", error);
+                        }
+                    }
+                    _ => unreachable!("unexpected error type: {:?}", e),
+                },
+            },
+        );
+    }
+}

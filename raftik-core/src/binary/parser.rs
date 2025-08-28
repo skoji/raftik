@@ -48,12 +48,6 @@ mod tests {
         types::*,
     };
 
-    impl ModuleParsed<'_> {
-        pub fn sec_by_id(&self, id: SectionID) -> Option<&Section<'_>> {
-            self.sections.iter().find(|s| s.id() == id)
-        }
-    }
-
     fn with_wat(wat: impl AsRef<str>, test: impl Fn(ModuleParsed)) {
         let wasm = wat::parse_str(wat).unwrap();
         let module = ModuleParsed::from_slice(&wasm).unwrap();
