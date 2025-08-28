@@ -19,8 +19,14 @@ pub enum ValidationError {
         code_bodies: usize,
     },
 
-    #[error("instruction validation error: {0}")]
-    InstructionValidationError(VInstError),
+    #[error("instruction validation error")]
+    InstructionValidationError {
+        desc: String,
+        error: VInstError,
+        progress: Vec<crate::ast::instructions::Opcode>,
+        value_stack: Vec<crate::validation::instruction::StackValue>,
+        control_stack: Vec<crate::validation::instruction::ControlFrame>,
+    },
 }
 
 #[derive(Error, Debug)]

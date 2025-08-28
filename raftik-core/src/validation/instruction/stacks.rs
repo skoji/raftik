@@ -61,6 +61,10 @@ impl ValueStack for TheStack {
             .map(|v| self.pop_expect_val(*v))
             .collect()
     }
+
+    fn get_clone_of_value_stack(&self) -> Vec<StackValue> {
+        self.values.clone()
+    }
 }
 
 impl ControlStack for TheStack {
@@ -93,6 +97,10 @@ impl ControlStack for TheStack {
         if let Some(frame) = self.controls.last_mut() {
             frame.unreachable = true;
         }
+    }
+
+    fn get_clone_of_control_stack(&self) -> Vec<ControlFrame> {
+        self.controls.clone()
     }
 }
 

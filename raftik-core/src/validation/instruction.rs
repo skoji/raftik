@@ -14,7 +14,7 @@ use crate::{
 };
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
-enum StackValue {
+pub enum StackValue {
     Unknown,
     Value(ValueType),
 }
@@ -31,8 +31,8 @@ impl From<NumberType> for StackValue {
     }
 }
 
-#[derive(Debug, Default)]
-struct ControlFrame {
+#[derive(Debug, Default, Clone)]
+pub struct ControlFrame {
     #[allow(dead_code)]
     pub start_types: Vec<ValueType>,
     pub end_types: Vec<ValueType>,
@@ -48,6 +48,8 @@ trait ValueStack {
     fn push_vals(&mut self, values: &[StackValue]);
     #[allow(dead_code)]
     fn pop_vals(&mut self, expected_values: &[StackValue]) -> Result<Vec<StackValue>, VInstError>;
+
+    fn get_clone_of_value_stack(&self) -> Vec<StackValue>;
 }
 
 trait ControlStack {
@@ -55,6 +57,7 @@ trait ControlStack {
     fn pop_ctrl(&mut self) -> Result<ControlFrame, VInstError>;
     #[allow(dead_code)]
     fn unreachable(&mut self);
+    fn get_clone_of_control_stack(&self) -> Vec<ControlFrame>;
 }
 
 fn validate_opcode(
@@ -83,9 +86,11 @@ fn validate_instructions(
     instructions: &[u8],
     stack: &mut (impl ValueStack + ControlStack),
     ctx: &mut Context,
+    progress: &mut Vec<Opcode>,
 ) -> Result<(), VInstError> {
     let mut it = iterator(instructions, parse_instruction);
     for opcode in &mut it {
+        progress.push(opcode);
         validate_opcode(&opcode, stack, ctx)?;
     }
 
@@ -99,9 +104,10 @@ pub fn validate_raw_expression(
     #[allow(unused_mut)] mut ctx: &mut Context,
     t: &FunctionType,
     expr: &RawExpression,
-    _position_string_on_error: String,
+    desc_on_error: String,
 ) -> Result<(), ValidationError> {
     let mut stack = stacks::generate_stack();
+    let mut progress = Vec::new();
 
     // push outermost control frame (regarding as a block)
     stack.push_ctrl(ControlFrame {
@@ -110,7 +116,13 @@ pub fn validate_raw_expression(
         ..Default::default()
     });
 
-    // TODO; add parsing context to instruction validation error;
-    validate_instructions(expr.instructions, &mut stack, ctx)
-        .map_err(ValidationError::InstructionValidationError)
+    validate_instructions(expr.instructions, &mut stack, ctx, &mut progress).map_err(|e| {
+        ValidationError::InstructionValidationError {
+            desc: desc_on_error,
+            error: e,
+            progress,
+            value_stack: stack.get_clone_of_value_stack(),
+            control_stack: stack.get_clone_of_control_stack(),
+        }
+    })
 }
