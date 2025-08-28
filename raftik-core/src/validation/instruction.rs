@@ -31,6 +31,12 @@ impl From<NumberType> for StackValue {
     }
 }
 
+impl From<ValueType> for StackValue {
+    fn from(t: ValueType) -> Self {
+        StackValue::Value(t)
+    }
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct ControlFrame {
     #[allow(dead_code)]
@@ -46,7 +52,6 @@ trait ValueStack {
     fn pop_expect_val(&mut self, expected: StackValue) -> Result<StackValue, VInstError>;
     #[allow(dead_code)]
     fn push_vals(&mut self, values: &[StackValue]);
-    #[allow(dead_code)]
     fn pop_vals(&mut self, expected_values: &[StackValue]) -> Result<Vec<StackValue>, VInstError>;
 
     fn get_clone_of_value_stack(&self) -> Vec<StackValue>;
