@@ -66,7 +66,7 @@ pub fn validate_code_section<'a>(
     }
     for (i, funcbody) in code_section.code.iter().enumerate() {
         let type_index = context.functions[i];
-        let func_type = context.types[*type_index as usize];
+        let func_type = context.types[type_index as usize];
 
         context.locals.clear();
         for param in func_type.params.iter() {
