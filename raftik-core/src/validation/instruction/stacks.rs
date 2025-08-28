@@ -89,7 +89,10 @@ impl ControlStack for TheStack {
                 .collect::<Vec<_>>()
                 .as_ref(),
         )?;
-        let frame = self.controls.pop().expect("should exist");
+        let frame = self
+            .controls
+            .pop()
+            .expect("control does exist here, for controls_last! has checked the existence");
         if self.values.len() != frame.height_of_value_stack {
             Err(ValidationError::ValueStackUnderflow)
         } else {
