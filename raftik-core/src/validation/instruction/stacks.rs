@@ -18,8 +18,8 @@ struct TheStack {
 
 impl TheStack {
     fn new() -> TheStack {
-        let values: Vec<StackValue> = Vec::new();
-        let controls: Vec<ControlFrame> = Vec::new();
+        let values = Vec::new();
+        let controls = Vec::new();
         TheStack { values, controls }
     }
 }
