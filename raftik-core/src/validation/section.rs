@@ -1,5 +1,4 @@
-use super::Context;
-use super::error::ValidationError;
+use super::{Context, error::ValidationError};
 use crate::ast::{
     CodeSection,
     section::{ExportSection, FunctionSection},
@@ -71,14 +70,13 @@ pub fn validate_code_section<'a>(
 
         context.locals.clear();
         for param in func_type.params.iter() {
-            context.locals.push(param);
+            context.locals.push(*param);
         }
         for local in funcbody.locals.iter() {
             for _ in 0..local.count {
-                context.locals.push(&local.value_type)
+                context.locals.push(local.value_type)
             }
         }
-
         super::instruction::validate_raw_expression(
             context,
             func_type,

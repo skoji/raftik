@@ -1,4 +1,4 @@
-mod instructions;
+pub mod instructions;
 mod integer;
 mod leb128;
 mod module;

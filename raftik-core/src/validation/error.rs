@@ -29,4 +29,10 @@ pub enum ValidationError {
         expected: crate::ast::types::ValueType,
         actual: crate::ast::types::ValueType,
     },
+
+    #[error("opcode parse failed: {0}")]
+    OpcodeParseFailed(String),
+
+    #[error("no local found at index {0}")]
+    NoLocalAtIndex(u32),
 }

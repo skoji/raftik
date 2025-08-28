@@ -10,6 +10,7 @@ macro_rules! controls_last {
 }
 
 #[allow(dead_code)]
+#[derive(Debug)]
 struct TheStack {
     values: Vec<StackValue>,
     controls: Vec<ControlFrame>,
@@ -80,9 +81,7 @@ impl ControlStack for TheStack {
     }
 
     fn pop_ctrl(&mut self) -> Result<ControlFrame, ValidationError> {
-        let Some(frame) = self.controls.pop() else {
-            return Err(ValidationError::ControlStackUnderflow);
-        };
+        let frame = controls_last!(self.controls)?;
         self.pop_vals(
             frame
                 .end_types
@@ -91,9 +90,9 @@ impl ControlStack for TheStack {
                 .collect::<Vec<_>>()
                 .as_ref(),
         )?;
-
+        let frame = self.controls.pop().expect("should exists");
         if self.values.len() != frame.height_of_value_stack {
-            Err(ValidationError::ControlStackUnderflow)
+            Err(ValidationError::ValueStackUnderflow)
         } else {
             Ok(frame)
         }

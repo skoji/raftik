@@ -2,12 +2,12 @@ pub mod error;
 mod instruction;
 mod section;
 
+use error::ValidationError;
+
 use crate::ast::{
     ModuleParsed, Section,
     types::{FunctionType, GlobalType, MemoryType, TableType, ValueType},
 };
-
-use error::ValidationError;
 
 #[derive(Default)]
 struct Context<'a> {
@@ -16,8 +16,7 @@ struct Context<'a> {
     pub tables: Vec<&'a TableType>,
     pub memories: Vec<&'a MemoryType>,
     pub globals: Vec<&'a GlobalType>,
-    #[allow(dead_code)]
-    pub locals: Vec<&'a ValueType>,
+    pub locals: Vec<ValueType>,
 }
 
 fn initialize_context<'a>(module: &'a ModuleParsed<'a>) -> Result<Context<'a>, ValidationError> {

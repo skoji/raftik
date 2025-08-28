@@ -1,48 +1,66 @@
 mod stacks;
-use super::Context;
-use super::error::ValidationError;
-use crate::ast::instructions::RawExpression;
-use crate::ast::types::{FunctionType, ValueType};
+use nom::combinator::iterator;
 
-#[allow(dead_code)]
+use super::{Context, error::ValidationError};
+use crate::{
+    ast::{
+        instructions::{Opcode, RawExpression},
+        types::{FunctionType, NumberType, ValueType},
+    },
+    binary::parser::instructions::parse_instruction,
+};
+
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 enum StackValue {
     Unknown,
     Value(ValueType),
 }
 
-#[allow(dead_code)]
+impl StackValue {
+    fn i32() -> Self {
+        NumberType::I32.into()
+    }
+}
+
+impl From<NumberType> for StackValue {
+    fn from(n: NumberType) -> Self {
+        StackValue::Value(ValueType::Number(n))
+    }
+}
+
 #[derive(Debug, Default)]
 struct ControlFrame {
+    #[allow(dead_code)]
     pub start_types: Vec<ValueType>,
     pub end_types: Vec<ValueType>,
     pub height_of_value_stack: usize,
     pub unreachable: bool,
 }
 
-#[allow(dead_code)]
 trait ValueStack {
     fn push_val(&mut self, value: StackValue);
     fn pop_val(&mut self) -> Result<StackValue, ValidationError>;
     fn pop_expect_val(&mut self, expected: StackValue) -> Result<StackValue, ValidationError>;
+    #[allow(dead_code)]
     fn push_vals(&mut self, values: &[StackValue]);
+    #[allow(dead_code)]
     fn pop_vals(
         &mut self,
         expected_values: &[StackValue],
     ) -> Result<Vec<StackValue>, ValidationError>;
 }
 
-#[allow(dead_code)]
 trait ControlStack {
     fn push_ctrl(&mut self, frame: ControlFrame);
     fn pop_ctrl(&mut self) -> Result<ControlFrame, ValidationError>;
+    #[allow(dead_code)]
     fn unreachable(&mut self);
 }
 
 pub fn validate_raw_expression(
-    mut _ctx: &mut Context,
+    #[allow(unused_mut)] mut ctx: &mut Context,
     t: &FunctionType,
-    _expr: &RawExpression,
+    expr: &RawExpression,
     _position_string_on_error: String,
 ) -> Result<(), ValidationError> {
     let mut stack = stacks::generate_stack();
@@ -54,8 +72,26 @@ pub fn validate_raw_expression(
         ..Default::default()
     });
 
-    // TODO; validate expression
-    // TODO; pop and check control frame
+    let mut it = iterator(expr.instructions, parse_instruction);
+    for opcode in &mut it {
+        match opcode {
+            Opcode::LocalGet(index) => {
+                let t = ctx
+                    .locals
+                    .get(index as usize)
+                    .ok_or(ValidationError::NoLocalAtIndex(index))?;
+                stack.push_val(StackValue::Value(*t));
+            }
+            Opcode::I32Add => {
+                stack.pop_expect_val(StackValue::i32())?;
+                stack.pop_expect_val(StackValue::i32())?;
+                stack.push_val(StackValue::i32());
+            }
+        }
+    }
+    it.finish()
+        .map_err(|e| ValidationError::OpcodeParseFailed(e.to_string()))?;
+    stack.pop_ctrl()?;
 
     Ok(())
 }

@@ -1,7 +1,6 @@
 use std::env;
 
-use raftik_core::ast::ModuleParsed;
-use raftik_core::validation::validate_module;
+use raftik_core::{ast::ModuleParsed, validation::validate_module};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
@@ -15,5 +14,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let module = ModuleParsed::from_slice(&data)?;
     println!("{:#?}", module);
     validate_module(&module)?;
+    println!("validation succeeded");
     Ok(())
 }
