@@ -37,10 +37,9 @@ impl ValueStack for TheStack {
         if self.values.len() == controls_top.height_of_value_stack {
             return Err(ValidationError::ValueStackUnderflow);
         }
-        if let Some(val) = self.values.pop() {
-            return Ok(val);
-        }
-        Err(ValidationError::ValueStackUnderflow)
+        self.values
+            .pop()
+            .ok_or(ValidationError::ValueStackUnderflow)
     }
 
     fn pop_expect_val(&mut self, expected: StackValue) -> Result<StackValue, ValidationError> {
