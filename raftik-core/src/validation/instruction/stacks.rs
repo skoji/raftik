@@ -1,12 +1,8 @@
 use super::{ControlFrame, ControlStack, StackValue, ValueStack};
-use crate::validation::error::ValidationError;
+use crate::validation::error::VInstError;
 
 macro_rules! controls_last {
-    ($controls: expr) => {{
-        $controls
-            .last()
-            .ok_or(ValidationError::ControlStackUnderflow)
-    }};
+    ($controls: expr) => {{ $controls.last().ok_or(VInstError::ControlStackUnderflow) }};
 }
 
 #[allow(dead_code)]
@@ -29,30 +25,26 @@ impl ValueStack for TheStack {
         self.values.push(value);
     }
 
-    fn pop_val(&mut self) -> Result<StackValue, ValidationError> {
+    fn pop_val(&mut self) -> Result<StackValue, VInstError> {
         let controls_top = controls_last!(self.controls)?;
         if self.values.len() == controls_top.height_of_value_stack && controls_top.unreachable {
             return Ok(StackValue::Unknown);
         }
         if self.values.len() == controls_top.height_of_value_stack {
-            return Err(ValidationError::ValueStackUnderflow);
+            return Err(VInstError::ValueStackUnderflow);
         }
-        self.values
-            .pop()
-            .ok_or(ValidationError::ValueStackUnderflow)
+        self.values.pop().ok_or(VInstError::ValueStackUnderflow)
     }
 
-    fn pop_expect_val(&mut self, expected: StackValue) -> Result<StackValue, ValidationError> {
+    fn pop_expect_val(&mut self, expected: StackValue) -> Result<StackValue, VInstError> {
         let actual = self.pop_val()?;
         match (&actual, &expected) {
             (StackValue::Unknown, _) | (_, StackValue::Unknown) => Ok(actual),
             (StackValue::Value(a), StackValue::Value(b)) if a == b => Ok(actual),
-            (StackValue::Value(a), StackValue::Value(b)) => {
-                Err(ValidationError::PopValueTypeMismatch {
-                    expected: *b,
-                    actual: *a,
-                })
-            }
+            (StackValue::Value(a), StackValue::Value(b)) => Err(VInstError::PopValueTypeMismatch {
+                expected: *b,
+                actual: *a,
+            }),
         }
     }
 
@@ -62,10 +54,7 @@ impl ValueStack for TheStack {
         }
     }
 
-    fn pop_vals(
-        &mut self,
-        expected_values: &[StackValue],
-    ) -> Result<Vec<StackValue>, ValidationError> {
+    fn pop_vals(&mut self, expected_values: &[StackValue]) -> Result<Vec<StackValue>, VInstError> {
         expected_values
             .iter()
             .rev()
@@ -79,7 +68,7 @@ impl ControlStack for TheStack {
         self.controls.push(frame);
     }
 
-    fn pop_ctrl(&mut self) -> Result<ControlFrame, ValidationError> {
+    fn pop_ctrl(&mut self) -> Result<ControlFrame, VInstError> {
         let frame = controls_last!(self.controls)?;
         self.pop_vals(
             frame
@@ -94,7 +83,7 @@ impl ControlStack for TheStack {
             .pop()
             .expect("control does exist here, for controls_last! has checked the existence");
         if self.values.len() != frame.height_of_value_stack {
-            Err(ValidationError::ValueStackUnderflow)
+            Err(VInstError::ValueStackUnderflow)
         } else {
             Ok(frame)
         }

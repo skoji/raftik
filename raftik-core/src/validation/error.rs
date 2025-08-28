@@ -18,6 +18,13 @@ pub enum ValidationError {
         funcs_declared: usize,
         code_bodies: usize,
     },
+
+    #[error("instruction validation error: {0}")]
+    InstructionValidationError(VInstError),
+}
+
+#[derive(Error, Debug)]
+pub enum VInstError {
     #[error("control stack underflow")]
     ControlStackUnderflow,
 

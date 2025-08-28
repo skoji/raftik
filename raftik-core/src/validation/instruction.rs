@@ -1,7 +1,10 @@
 mod stacks;
 use nom::combinator::iterator;
 
-use super::{Context, error::ValidationError};
+use super::{
+    Context,
+    error::{VInstError, ValidationError},
+};
 use crate::{
     ast::{
         instructions::{Opcode, RawExpression},
@@ -39,20 +42,17 @@ struct ControlFrame {
 
 trait ValueStack {
     fn push_val(&mut self, value: StackValue);
-    fn pop_val(&mut self) -> Result<StackValue, ValidationError>;
-    fn pop_expect_val(&mut self, expected: StackValue) -> Result<StackValue, ValidationError>;
+    fn pop_val(&mut self) -> Result<StackValue, VInstError>;
+    fn pop_expect_val(&mut self, expected: StackValue) -> Result<StackValue, VInstError>;
     #[allow(dead_code)]
     fn push_vals(&mut self, values: &[StackValue]);
     #[allow(dead_code)]
-    fn pop_vals(
-        &mut self,
-        expected_values: &[StackValue],
-    ) -> Result<Vec<StackValue>, ValidationError>;
+    fn pop_vals(&mut self, expected_values: &[StackValue]) -> Result<Vec<StackValue>, VInstError>;
 }
 
 trait ControlStack {
     fn push_ctrl(&mut self, frame: ControlFrame);
-    fn pop_ctrl(&mut self) -> Result<ControlFrame, ValidationError>;
+    fn pop_ctrl(&mut self) -> Result<ControlFrame, VInstError>;
     #[allow(dead_code)]
     fn unreachable(&mut self);
 }
@@ -61,13 +61,13 @@ fn validate_opcode(
     opcode: &Opcode,
     stack: &mut (impl ValueStack + ControlStack),
     ctx: &mut Context,
-) -> Result<(), ValidationError> {
+) -> Result<(), VInstError> {
     match opcode {
         Opcode::LocalGet(index) => {
             let t = ctx
                 .locals
                 .get(*index as usize)
-                .ok_or(ValidationError::NoLocalAtIndex(*index))?;
+                .ok_or(VInstError::NoLocalAtIndex(*index))?;
             stack.push_val(StackValue::Value(*t));
         }
         Opcode::I32Add => {
@@ -76,6 +76,22 @@ fn validate_opcode(
             stack.push_val(StackValue::i32());
         }
     }
+    Ok(())
+}
+
+fn validate_instructions(
+    instructions: &[u8],
+    stack: &mut (impl ValueStack + ControlStack),
+    ctx: &mut Context,
+) -> Result<(), VInstError> {
+    let mut it = iterator(instructions, parse_instruction);
+    for opcode in &mut it {
+        validate_opcode(&opcode, stack, ctx)?;
+    }
+
+    it.finish()
+        .map_err(|e| VInstError::OpcodeParseFailed(e.to_string()))?;
+    stack.pop_ctrl()?;
     Ok(())
 }
 
@@ -94,14 +110,7 @@ pub fn validate_raw_expression(
         ..Default::default()
     });
 
-    let mut it = iterator(expr.instructions, parse_instruction);
-    for opcode in &mut it {
-        validate_opcode(&opcode, &mut stack, ctx)?;
-    }
-
-    it.finish()
-        .map_err(|e| ValidationError::OpcodeParseFailed(e.to_string()))?;
-    stack.pop_ctrl()?;
-
-    Ok(())
+    // TODO; add parsing context to instruction validation error;
+    validate_instructions(expr.instructions, &mut stack, ctx)
+        .map_err(ValidationError::InstructionValidationError)
 }
