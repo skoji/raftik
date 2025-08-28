@@ -1,22 +1,22 @@
 pub mod error;
+mod instruction;
 mod section;
+
+use error::ValidationError;
 
 use crate::ast::{
     ModuleParsed, Section,
     types::{FunctionType, GlobalType, MemoryType, TableType, ValueType},
 };
 
-use error::ValidationError;
-
-#[derive(Default)]
+#[derive(Default, Debug)]
 struct Context<'a> {
     pub types: Vec<&'a FunctionType>,
-    pub functions: Vec<&'a u32>,
+    pub functions: Vec<u32>,
     pub tables: Vec<&'a TableType>,
     pub memories: Vec<&'a MemoryType>,
     pub globals: Vec<&'a GlobalType>,
-    #[allow(dead_code)]
-    pub locals: Vec<&'a ValueType>,
+    pub locals: Vec<ValueType>,
 }
 
 fn initialize_context<'a>(module: &'a ModuleParsed<'a>) -> Result<Context<'a>, ValidationError> {
@@ -26,7 +26,7 @@ fn initialize_context<'a>(module: &'a ModuleParsed<'a>) -> Result<Context<'a>, V
             Section::Type(type_section) => context.types = type_section.types.iter().collect(),
             Section::Import(_) => (),
             Section::Function(function_section) => {
-                context.functions = function_section.type_indices.iter().collect();
+                context.functions = function_section.type_indices.to_vec()
             }
             Section::Table(table_section) => context.tables = table_section.tables.iter().collect(),
             Section::Memory(memory_section) => {
@@ -52,7 +52,6 @@ fn initialize_context<'a>(module: &'a ModuleParsed<'a>) -> Result<Context<'a>, V
 }
 
 pub fn validate_module(module: &ModuleParsed) -> Result<(), ValidationError> {
-    #[allow(unused_mut)]
     let mut context = initialize_context(module)?;
     for section in module.sections.iter() {
         match section {
@@ -67,13 +66,88 @@ pub fn validate_module(module: &ModuleParsed) -> Result<(), ValidationError> {
             Section::Export(export_section) => {
                 section::validate_export_section(export_section, &context)?
             }
-            Section::Start(_) => (),     // TODO; should validate
-            Section::Element(_) => (),   // TODO; should validate
-            Section::Code(_) => (),      // TODO; should validate
+            Section::Start(_) => (),   // TODO; should validate
+            Section::Element(_) => (), // TODO; should validate
+            Section::Code(code_section) => {
+                section::validate_code_section(code_section, &mut context)?
+            }
             Section::Data(_) => (),      // TODO; should validate
             Section::DataCount(_) => (), // TODO; should validate
             Section::Custom(_) => (),    // no need to validate
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        ast::{ModuleParsed, section::SectionID, types::*},
+        validation::error::VInstError,
+    };
+
+    impl ModuleParsed<'_> {
+        pub fn sec_by_id(&self, id: SectionID) -> Option<&Section<'_>> {
+            self.sections.iter().find(|s| s.id() == id)
+        }
+    }
+
+    fn with_wat(wat: impl AsRef<str>, test: impl Fn(ModuleParsed)) {
+        let wasm = wat::parse_str(wat).unwrap();
+        let module = ModuleParsed::from_slice(&wasm).unwrap();
+        test(module)
+    }
+
+    #[test]
+    fn test_minimal_wasm() {
+        with_wat("(module)", |module| {
+            assert!(validate_module(&module).is_ok());
+        });
+    }
+
+    #[test]
+    fn test_add_module() {
+        with_wat(
+            "
+(module
+  (func $add (param $lhs i32) (param $rhs i32) (result i32)
+    local.get $lhs
+    local.get $rhs
+    i32.add)
+  (export \"add\" (func $add))
+)
+",
+            |module| assert!(validate_module(&module).is_ok()),
+        );
+    }
+
+    #[test]
+    fn test_invalid_add_module() {
+        with_wat(
+            "
+(module
+  (func $add (param $lhs i32) (param $rhs i64) (result i32)
+    local.get $lhs
+    local.get $rhs
+    i32.add)
+  (export \"add\" (func $add))
+)
+",
+            |module| match validate_module(&module) {
+                Ok(_) => unreachable!("should produce error"),
+                Err(e) => match e {
+                    ValidationError::InstructionValidationError { error, .. } => {
+                        if let VInstError::PopValueTypeMismatch { expected, actual } = error {
+                            assert_eq!(ValueType::Number(NumberType::I32), expected);
+                            assert_eq!(ValueType::Number(NumberType::I64), actual);
+                        } else {
+                            unreachable!("unexpected VInstError: {:?}", error);
+                        }
+                    }
+                    _ => unreachable!("unexpected error type: {:?}", e),
+                },
+            },
+        );
+    }
 }

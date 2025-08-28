@@ -1,9 +1,8 @@
+use super::types::ValueType;
 use crate::ast::{
     instructions::RawExpression,
     types::{FunctionType, GlobalType, MemoryType, ReferenceType, TableType},
 };
-
-use super::types::ValueType;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Section<'a> {

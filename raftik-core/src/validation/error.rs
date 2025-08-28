@@ -11,4 +11,41 @@ pub enum ValidationError {
         referred: &'static str,
         referred_index: u32,
     },
+    #[error(
+        "code section length mismatch: functions declared: {funcs_declared}, code bodies: {code_bodies}"
+    )]
+    CodeSectionLengthMismatch {
+        funcs_declared: usize,
+        code_bodies: usize,
+    },
+
+    #[error("instruction validation error")]
+    InstructionValidationError {
+        desc: String,
+        error: VInstError,
+        progress: Vec<crate::ast::instructions::Opcode>,
+        value_stack: Vec<crate::validation::instruction::StackValue>,
+        control_stack: Vec<crate::validation::instruction::ControlFrame>,
+    },
+}
+
+#[derive(Error, Debug)]
+pub enum VInstError {
+    #[error("control stack underflow")]
+    ControlStackUnderflow,
+
+    #[error("value stack underflow")]
+    ValueStackUnderflow,
+
+    #[error("pop value expected {expected:?}, actual  {actual:?}")]
+    PopValueTypeMismatch {
+        expected: crate::ast::types::ValueType,
+        actual: crate::ast::types::ValueType,
+    },
+
+    #[error("opcode parse failed: {0}")]
+    OpcodeParseFailed(String),
+
+    #[error("no local found at index {0}")]
+    NoLocalAtIndex(u32),
 }
