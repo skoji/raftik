@@ -57,6 +57,28 @@ trait ControlStack {
     fn unreachable(&mut self);
 }
 
+fn validate_opcode(
+    opcode: &Opcode,
+    stack: &mut (impl ValueStack + ControlStack),
+    ctx: &mut Context,
+) -> Result<(), ValidationError> {
+    match opcode {
+        Opcode::LocalGet(index) => {
+            let t = ctx
+                .locals
+                .get(*index as usize)
+                .ok_or(ValidationError::NoLocalAtIndex(*index))?;
+            stack.push_val(StackValue::Value(*t));
+        }
+        Opcode::I32Add => {
+            stack.pop_expect_val(StackValue::i32())?;
+            stack.pop_expect_val(StackValue::i32())?;
+            stack.push_val(StackValue::i32());
+        }
+    }
+    Ok(())
+}
+
 pub fn validate_raw_expression(
     #[allow(unused_mut)] mut ctx: &mut Context,
     t: &FunctionType,
@@ -74,21 +96,9 @@ pub fn validate_raw_expression(
 
     let mut it = iterator(expr.instructions, parse_instruction);
     for opcode in &mut it {
-        match opcode {
-            Opcode::LocalGet(index) => {
-                let t = ctx
-                    .locals
-                    .get(index as usize)
-                    .ok_or(ValidationError::NoLocalAtIndex(index))?;
-                stack.push_val(StackValue::Value(*t));
-            }
-            Opcode::I32Add => {
-                stack.pop_expect_val(StackValue::i32())?;
-                stack.pop_expect_val(StackValue::i32())?;
-                stack.push_val(StackValue::i32());
-            }
-        }
+        validate_opcode(&opcode, &mut stack, ctx)?;
     }
+
     it.finish()
         .map_err(|e| ValidationError::OpcodeParseFailed(e.to_string()))?;
     stack.pop_ctrl()?;

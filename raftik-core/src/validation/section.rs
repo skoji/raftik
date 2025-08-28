@@ -81,7 +81,7 @@ pub fn validate_code_section<'a>(
             context,
             func_type,
             &funcbody.expression,
-            format!("at code section #{}", i).to_string(),
+            format!("at code section #{}", i),
         )?;
     }
     context.locals.clear();
