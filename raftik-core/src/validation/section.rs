@@ -1,8 +1,5 @@
-use super::{Context, error::ValidationError};
-use crate::ast::{
-    CodeSection,
-    section::{ExportSection, FunctionSection},
-};
+use super::{Context, error::ValidationError, types};
+use crate::ast::section::{CodeSection, ExportSection, FunctionSection, TableSection};
 
 macro_rules! validate_index {
     ($field: expr, $referring: expr, $referring_index: expr, $referred: expr, $referred_index: expr) => {{
@@ -85,5 +82,19 @@ pub fn validate_code_section<'a>(
         )?;
     }
     context.locals.clear();
+    Ok(())
+}
+
+const MAX_TABLE_SIZE: u32 = u32::MAX;
+pub fn validate_table_section(table_section: &TableSection) -> Result<(), ValidationError> {
+    for (i, table) in table_section.tables.iter().enumerate() {
+        if !types::validate_limits(&table.limits, MAX_TABLE_SIZE) {
+            return Err(ValidationError::TableSizeError {
+                index: i,
+                limits: table.limits.clone(),
+                maximum: MAX_TABLE_SIZE,
+            });
+        }
+    }
     Ok(())
 }

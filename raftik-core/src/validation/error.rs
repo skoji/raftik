@@ -27,6 +27,13 @@ pub enum ValidationError {
         value_stack: Vec<crate::validation::instruction::StackValue>,
         control_stack: Vec<crate::validation::instruction::ControlFrame>,
     },
+
+    #[error("table is invalid: index {index}, Limits: {limits:?}, system maximum: {maximum}")]
+    TableSizeError {
+        index: usize,
+        limits: crate::ast::types::Limits,
+        maximum: u32,
+    },
 }
 
 #[derive(Error, Debug)]

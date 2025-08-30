@@ -1,6 +1,7 @@
 pub mod error;
 mod instruction;
 mod section;
+mod types;
 
 use error::ValidationError;
 
@@ -60,7 +61,7 @@ pub fn validate_module(module: &ModuleParsed) -> Result<(), ValidationError> {
             Section::Function(function_section) => {
                 section::validate_function_section(function_section, &context)?
             }
-            Section::Table(_) => (),  // TODO; should validate
+            Section::Table(table_section) => section::validate_table_section(table_section)?,
             Section::Memory(_) => (), // TODO; should validate
             Section::Global(_) => (), // TODO; should validate
             Section::Export(export_section) => {
@@ -87,9 +88,12 @@ mod tests {
         validation::error::VInstError,
     };
 
-    impl ModuleParsed<'_> {
-        pub fn sec_by_id(&self, id: SectionID) -> Option<&Section<'_>> {
+    impl<'a> ModuleParsed<'a> {
+        pub fn sec_by_id(&self, id: SectionID) -> Option<&Section<'a>> {
             self.sections.iter().find(|s| s.id() == id)
+        }
+        pub fn sec_by_id_mut(&mut self, id: SectionID) -> Option<&mut Section<'a>> {
+            self.sections.iter_mut().find(|s| s.id() == id)
         }
     }
 
@@ -149,5 +153,31 @@ mod tests {
                 },
             },
         );
+    }
+
+    #[test]
+    fn test_table_module() {
+        with_wat("(module (table 1 10 funcref))", |module| {
+            assert!(validate_module(&module).is_ok());
+        });
+    }
+
+    #[test]
+    fn test_invalid_table_module() {
+        with_wat("(module (table 1 10 funcref))", |mut module| {
+            let section: &mut Section<'_> = module.sec_by_id_mut(SectionID::Table).unwrap();
+            let Section::Table(table_section) = section else {
+                unreachable!("")
+            };
+            table_section.tables[0].limits.min = 12;
+
+            match validate_module(&module) {
+                Ok(_) => unreachable!("should produce error"),
+                Err(e) => match e {
+                    ValidationError::TableSizeError { .. } => (),
+                    _ => unreachable!("unexpected error type: {:?}", e),
+                },
+            };
+        });
     }
 }

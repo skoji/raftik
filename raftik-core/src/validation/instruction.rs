@@ -98,7 +98,6 @@ fn validate_instructions(
         progress.push(opcode);
         validate_opcode(&opcode, stack, ctx)?;
     }
-
     it.finish()
         .map_err(|e| VInstError::OpcodeParseFailed(e.to_string()))?;
     stack.pop_ctrl()?;
