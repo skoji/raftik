@@ -1,5 +1,7 @@
 use super::{Context, error::ValidationError, types};
-use crate::ast::section::{CodeSection, ExportSection, FunctionSection, TableSection};
+use crate::ast::section::{
+    CodeSection, ExportSection, FunctionSection, MemorySection, TableSection,
+};
 
 macro_rules! validate_index {
     ($field: expr, $referring: expr, $referring_index: expr, $referred: expr, $referred_index: expr) => {{
@@ -93,6 +95,20 @@ pub fn validate_table_section(table_section: &TableSection) -> Result<(), Valida
                 index: i,
                 limits: table.limits.clone(),
                 maximum: MAX_TABLE_SIZE,
+            });
+        }
+    }
+    Ok(())
+}
+
+const MAX_PAGES_SIZE: u32 = 2_u32.pow(16);
+pub fn validate_memory_section(memory_section: &MemorySection) -> Result<(), ValidationError> {
+    for (i, memory) in memory_section.memories.iter().enumerate() {
+        if !types::validate_limits(&memory.limits, MAX_PAGES_SIZE) {
+            return Err(ValidationError::MemorySizeError {
+                index: i,
+                limits: memory.limits.clone(),
+                maximum: MAX_PAGES_SIZE,
             });
         }
     }

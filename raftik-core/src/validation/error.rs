@@ -34,6 +34,13 @@ pub enum ValidationError {
         limits: crate::ast::types::Limits,
         maximum: u32,
     },
+
+    #[error("memory is invalid: index {index}, Limits: {limits:?}, system maximum: {maximum}")]
+    MemorySizeError {
+        index: usize,
+        limits: crate::ast::types::Limits,
+        maximum: u32,
+    },
 }
 
 #[derive(Error, Debug)]
