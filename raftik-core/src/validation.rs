@@ -62,7 +62,7 @@ pub fn validate_module(module: &ModuleParsed) -> Result<(), ValidationError> {
                 section::validate_function_section(function_section, &context)?
             }
             Section::Table(table_section) => section::validate_table_section(table_section)?,
-            Section::Memory(_) => (), // TODO; should validate
+            Section::Memory(memory_section) => section::validate_memory_section(memory_section)?,
             Section::Global(_) => (), // TODO; should validate
             Section::Export(export_section) => {
                 section::validate_export_section(export_section, &context)?
@@ -178,6 +178,31 @@ mod tests {
                     _ => unreachable!("unexpected error type: {:?}", e),
                 },
             };
+        });
+    }
+
+    #[test]
+    fn test_memory_module() {
+        with_wat("(module (memory 10 100))", |module| {
+            assert!(validate_module(&module).is_ok());
+        });
+    }
+
+    #[test]
+    fn test_invalid_memory_module() {
+        with_wat("(module (memory 10 100))", |mut module| {
+            let section: &mut Section<'_> = module.sec_by_id_mut(SectionID::Memory).unwrap();
+            let Section::Memory(memory_section) = section else {
+                unreachable!("")
+            };
+            memory_section.memories[0].limits.max = Some(1);
+            match validate_module(&module) {
+                Ok(_) => unreachable!("should produce error"),
+                Err(e) => match e {
+                    ValidationError::MemorySizeError { .. } => (),
+                    _ => unreachable!("unexpected error type: {:?}", e),
+                },
+            }
         });
     }
 }
