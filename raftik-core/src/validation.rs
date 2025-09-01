@@ -10,13 +10,26 @@ use crate::ast::{
     types::{FunctionType, GlobalType, MemoryType, TableType, ValueType},
 };
 
+#[allow(dead_code)]
+#[derive(Debug)]
+enum GlobalDesc<'a> {
+    Internal {
+        t: &'a GlobalType,
+    },
+    Imported {
+        module: String,
+        name: String,
+        t: &'a GlobalType,
+    },
+}
+
 #[derive(Default, Debug)]
 struct Context<'a> {
     pub types: Vec<&'a FunctionType>,
     pub functions: Vec<u32>,
     pub tables: Vec<&'a TableType>,
     pub memories: Vec<&'a MemoryType>,
-    pub globals: Vec<&'a GlobalType>,
+    pub globals: Vec<GlobalDesc<'a>>,
     pub locals: Vec<ValueType>,
 }
 
@@ -34,11 +47,13 @@ fn initialize_context<'a>(module: &'a ModuleParsed<'a>) -> Result<Context<'a>, V
                 context.memories = memory_section.memories.iter().collect()
             }
             Section::Global(global_section) => {
-                context.globals = global_section
+                for g in global_section
                     .globals
                     .iter()
-                    .map(|g| &g.global_type)
-                    .collect()
+                    .map(|g| GlobalDesc::Internal { t: &g.global_type })
+                {
+                    context.globals.push(g);
+                }
             }
             Section::Export(_) => (),
             Section::Start(_) => (),
