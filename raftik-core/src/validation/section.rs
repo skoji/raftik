@@ -1,4 +1,4 @@
-use super::{Context, error::ValidationError, types};
+use super::{Context, ItemFilter, error::ValidationError, types};
 use crate::ast::section::{
     CodeSection, ExportSection, FunctionSection, MemorySection, TableSection,
 };
@@ -55,16 +55,16 @@ pub fn validate_code_section<'a>(
     code_section: &'a CodeSection<'a>,
     context: &mut Context<'a>,
 ) -> Result<(), ValidationError> {
-    let funcs_declared = context.functions.len();
+    let funcs_declared = context.functions.internal();
     let code_bodies = code_section.code.len();
-    if funcs_declared != code_bodies {
+    if funcs_declared.len() != code_bodies {
         return Err(ValidationError::CodeSectionLengthMismatch {
-            funcs_declared,
+            funcs_declared: funcs_declared.len(),
             code_bodies,
         });
     }
     for (i, funcbody) in code_section.code.iter().enumerate() {
-        let type_index = context.functions[i];
+        let type_index = funcs_declared[i];
         let func_type = context.types[type_index as usize];
 
         context.locals.clear();

@@ -12,24 +12,54 @@ use crate::ast::{
 
 #[allow(dead_code)]
 #[derive(Debug)]
-enum GlobalDesc<'a> {
-    Internal {
-        t: &'a GlobalType,
-    },
-    Imported {
-        module: String,
-        name: String,
-        t: &'a GlobalType,
-    },
+enum ItemDesc<T: Clone> {
+    Internal { t: T },
+    Imported { module: String, name: String, t: T },
+}
+
+impl<T: Clone> ItemDesc<T> {
+    fn t(&self) -> &T {
+        match self {
+            ItemDesc::Internal { t } => t,
+            ItemDesc::Imported { t, .. } => t,
+        }
+    }
+}
+
+trait ItemFilter<T: Clone> {
+    fn internal(&self) -> Vec<T>;
+    fn imported(&self) -> Vec<T>;
+}
+
+impl<T: Clone> ItemFilter<T> for Vec<ItemDesc<T>> {
+    fn internal(&self) -> Vec<T> {
+        self.iter()
+            .filter(|x| match x {
+                ItemDesc::Internal { .. } => true,
+                ItemDesc::Imported { .. } => false,
+            })
+            .map(|x| x.t().clone())
+            .collect()
+    }
+
+    fn imported(&self) -> Vec<T> {
+        self.iter()
+            .filter(|x| match x {
+                ItemDesc::Internal { .. } => false,
+                ItemDesc::Imported { .. } => true,
+            })
+            .map(|x| x.t().clone())
+            .collect()
+    }
 }
 
 #[derive(Default, Debug)]
 struct Context<'a> {
     pub types: Vec<&'a FunctionType>,
-    pub functions: Vec<u32>,
+    pub functions: Vec<ItemDesc<u32>>,
     pub tables: Vec<&'a TableType>,
     pub memories: Vec<&'a MemoryType>,
-    pub globals: Vec<GlobalDesc<'a>>,
+    pub globals: Vec<ItemDesc<&'a GlobalType>>,
     pub locals: Vec<ValueType>,
 }
 
@@ -41,25 +71,33 @@ fn initialize_context<'a>(module: &'a ModuleParsed<'a>) -> Result<Context<'a>, V
             Section::Import(import_section) => {
                 for i in &import_section.imports {
                     match &i.desc {
-                        crate::ast::section::ImportDesc::TypeIndex(_) => (), // nothing to do
+                        crate::ast::section::ImportDesc::TypeIndex(t) => {
+                            context.functions.push(ItemDesc::Imported {
+                                name: i.name.clone(),
+                                module: i.module.clone(),
+                                t: *t,
+                            });
+                        }
                         crate::ast::section::ImportDesc::Table(table_type) => {
                             context.tables.push(table_type);
                         }
                         crate::ast::section::ImportDesc::Memory(memory_type) => {
                             context.memories.push(memory_type);
                         }
-                        crate::ast::section::ImportDesc::Global(global_type) => {
-                            context.globals.push(GlobalDesc::Imported {
+                        crate::ast::section::ImportDesc::Global(t) => {
+                            context.globals.push(ItemDesc::Imported {
                                 name: i.name.clone(),
                                 module: i.module.clone(),
-                                t: global_type,
+                                t,
                             });
                         }
                     }
                 }
             }
             Section::Function(function_section) => {
-                context.functions = function_section.type_indices.to_vec()
+                for t in function_section.type_indices.iter() {
+                    context.functions.push(ItemDesc::Internal { t: *t });
+                }
             }
             Section::Table(table_section) => {
                 for t in table_section.tables.iter() {
@@ -75,7 +113,7 @@ fn initialize_context<'a>(module: &'a ModuleParsed<'a>) -> Result<Context<'a>, V
                 for g in global_section
                     .globals
                     .iter()
-                    .map(|g| GlobalDesc::Internal { t: &g.global_type })
+                    .map(|g| ItemDesc::Internal { t: &g.global_type })
                 {
                     context.globals.push(g);
                 }
