@@ -24,15 +24,15 @@ pub enum Opcode {
 
 impl Opcode {
     pub fn is_constant(&self) -> bool {
-        match self {
-            Opcode::GlobalGet(..) => true,
-            Opcode::I32Const(..) => true,
-            Opcode::I64Const(..) => true,
-            Opcode::F32Const(..) => true,
-            Opcode::F64Const(..) => true,
-            Opcode::RefNull(..) => true,
-            Opcode::RefFunc(..) => true,
-            _ => false,
-        }
+        matches!(
+            self,
+            Opcode::GlobalGet(..)
+                | Opcode::I32Const(..)
+                | Opcode::I64Const(..)
+                | Opcode::F32Const(..)
+                | Opcode::F64Const(..)
+                | Opcode::RefNull(..)
+                | Opcode::RefFunc(..)
+        )
     }
 }
