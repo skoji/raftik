@@ -70,9 +70,6 @@ fn validate_opcode(
     stack: &mut (impl ValueStack + ControlStack),
     ctx: &mut Context,
 ) -> Result<(), VInstError> {
-    if ctx.instructions_should_be_constant && !opcode.is_constant() {
-        return Err(VInstError::OpcodeShouldBeConstant(*opcode));
-    }
     match opcode {
         Opcode::LocalGet(index) => {
             let t = ctx
@@ -88,6 +85,19 @@ fn validate_opcode(
         }
         _ => todo!(),
     }
+
+    if ctx.instructions_should_be_constant {
+        if !opcode.is_constant() {
+            return Err(VInstError::OpcodeShouldBeConstant(*opcode));
+        }
+        if let Opcode::GlobalGet(i) = opcode {
+            let g = *ctx.globals[*i as usize].t();
+            if !matches!(g.mutability, crate::ast::types::Mutability::Const) {
+                return Err(VInstError::GlobalGetShouldBeConstant(*i));
+            }
+        }
+    }
+
     Ok(())
 }
 
