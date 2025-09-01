@@ -86,6 +86,7 @@ fn validate_opcode(
             stack.pop_expect_val(StackValue::i32())?;
             stack.push_val(StackValue::i32());
         }
+        _ => todo!(),
     }
     Ok(())
 }
