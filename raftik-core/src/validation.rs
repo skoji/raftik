@@ -38,13 +38,38 @@ fn initialize_context<'a>(module: &'a ModuleParsed<'a>) -> Result<Context<'a>, V
     for section in module.sections.iter() {
         match section {
             Section::Type(type_section) => context.types = type_section.types.iter().collect(),
-            Section::Import(_) => (),
+            Section::Import(import_section) => {
+                for i in &import_section.imports {
+                    match &i.desc {
+                        crate::ast::section::ImportDesc::TypeIndex(_) => (), // nothing to do
+                        crate::ast::section::ImportDesc::Table(table_type) => {
+                            context.tables.push(table_type);
+                        }
+                        crate::ast::section::ImportDesc::Memory(memory_type) => {
+                            context.memories.push(memory_type);
+                        }
+                        crate::ast::section::ImportDesc::Global(global_type) => {
+                            context.globals.push(GlobalDesc::Imported {
+                                name: i.name.clone(),
+                                module: i.module.clone(),
+                                t: global_type,
+                            });
+                        }
+                    }
+                }
+            }
             Section::Function(function_section) => {
                 context.functions = function_section.type_indices.to_vec()
             }
-            Section::Table(table_section) => context.tables = table_section.tables.iter().collect(),
+            Section::Table(table_section) => {
+                for t in table_section.tables.iter() {
+                    context.tables.push(t);
+                }
+            }
             Section::Memory(memory_section) => {
-                context.memories = memory_section.memories.iter().collect()
+                for m in memory_section.memories.iter() {
+                    context.memories.push(m);
+                }
             }
             Section::Global(global_section) => {
                 for g in global_section
