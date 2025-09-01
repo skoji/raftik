@@ -70,6 +70,9 @@ fn validate_opcode(
     stack: &mut (impl ValueStack + ControlStack),
     ctx: &mut Context,
 ) -> Result<(), VInstError> {
+    if ctx.instructions_should_be_constant && !opcode.is_constant() {
+        return Err(VInstError::OpcodeShouldBeConstant(*opcode));
+    }
     match opcode {
         Opcode::LocalGet(index) => {
             let t = ctx

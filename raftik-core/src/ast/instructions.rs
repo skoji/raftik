@@ -8,3 +8,12 @@ pub enum Opcode {
     LocalGet(u32),
     I32Add,
 }
+
+impl Opcode {
+    pub fn is_constant(&self) -> bool {
+        match self {
+            Opcode::LocalGet(..) => true,
+            _ => false,
+        }
+    }
+}

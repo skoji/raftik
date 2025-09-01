@@ -61,6 +61,7 @@ struct Context<'a> {
     pub memories: Vec<&'a MemoryType>,
     pub globals: Vec<ItemDesc<&'a GlobalType>>,
     pub locals: Vec<ValueType>,
+    pub instructions_should_be_constant: bool,
 }
 
 fn initialize_context<'a>(module: &'a ModuleParsed<'a>) -> Result<Context<'a>, ValidationError> {
