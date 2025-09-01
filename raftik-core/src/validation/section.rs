@@ -1,6 +1,9 @@
 use super::{Context, ItemFilter, error::ValidationError, types};
-use crate::ast::section::{
-    CodeSection, ExportSection, FunctionSection, MemorySection, TableSection,
+use crate::ast::{
+    section::{
+        CodeSection, ExportSection, FunctionSection, GlobalSection, MemorySection, TableSection,
+    },
+    types::FunctionType,
 };
 
 macro_rules! validate_index {
@@ -55,7 +58,12 @@ pub fn validate_code_section<'a>(
     code_section: &'a CodeSection<'a>,
     context: &mut Context<'a>,
 ) -> Result<(), ValidationError> {
-    let funcs_declared = context.functions.internal();
+    let funcs_declared: Vec<_> = context
+        .functions
+        .internal()
+        .iter()
+        .map(|x| *x.t())
+        .collect();
     let code_bodies = code_section.code.len();
     if funcs_declared.len() != code_bodies {
         return Err(ValidationError::CodeSectionLengthMismatch {
@@ -111,6 +119,25 @@ pub fn validate_memory_section(memory_section: &MemorySection) -> Result<(), Val
                 maximum: MAX_PAGES_SIZE,
             });
         }
+    }
+    Ok(())
+}
+
+pub fn validate_global_section(
+    global_section: &GlobalSection,
+    ctx: &mut Context,
+) -> Result<(), ValidationError> {
+    for (i, g) in global_section.globals.iter().enumerate() {
+        let f = FunctionType {
+            params: vec![],
+            results: vec![g.global_type.val_type],
+        };
+        super::instruction::validate_raw_expression(
+            ctx,
+            &f,
+            &g.expression,
+            format!("at global section {}", i),
+        )?;
     }
     Ok(())
 }

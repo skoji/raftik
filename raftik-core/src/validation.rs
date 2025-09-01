@@ -11,7 +11,7 @@ use crate::ast::{
 };
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum ItemDesc<T: Clone> {
     Internal { t: T },
     Imported { module: String, name: String, t: T },
@@ -27,28 +27,27 @@ impl<T: Clone> ItemDesc<T> {
 }
 
 trait ItemFilter<T: Clone> {
-    fn internal(&self) -> Vec<T>;
-    fn imported(&self) -> Vec<T>;
+    fn internal(&self) -> Vec<ItemDesc<T>>;
+    fn imported(&self) -> Vec<ItemDesc<T>>;
 }
 
 impl<T: Clone> ItemFilter<T> for Vec<ItemDesc<T>> {
-    fn internal(&self) -> Vec<T> {
+    fn internal(&self) -> Vec<ItemDesc<T>> {
         self.iter()
             .filter(|x| match x {
                 ItemDesc::Internal { .. } => true,
                 ItemDesc::Imported { .. } => false,
             })
-            .map(|x| x.t().clone())
+            .cloned()
             .collect()
     }
-
-    fn imported(&self) -> Vec<T> {
+    fn imported(&self) -> Vec<ItemDesc<T>> {
         self.iter()
             .filter(|x| match x {
                 ItemDesc::Internal { .. } => false,
                 ItemDesc::Imported { .. } => true,
             })
-            .map(|x| x.t().clone())
+            .cloned()
             .collect()
     }
 }
@@ -62,6 +61,20 @@ struct Context<'a> {
     pub globals: Vec<ItemDesc<&'a GlobalType>>,
     pub locals: Vec<ValueType>,
     pub instructions_should_be_constant: bool,
+}
+
+impl<'a> Context<'a> {
+    pub fn prime(&mut self) -> Self {
+        Context {
+            types: self.types.clone(),
+            functions: self.functions.clone(),
+            tables: self.tables.clone(),
+            memories: self.memories.clone(),
+            globals: self.globals.imported(),
+            locals: self.locals.clone(),
+            instructions_should_be_constant: self.instructions_should_be_constant,
+        }
+    }
 }
 
 fn initialize_context<'a>(module: &'a ModuleParsed<'a>) -> Result<Context<'a>, ValidationError> {
@@ -142,7 +155,11 @@ pub fn validate_module(module: &ModuleParsed) -> Result<(), ValidationError> {
             }
             Section::Table(table_section) => section::validate_table_section(table_section)?,
             Section::Memory(memory_section) => section::validate_memory_section(memory_section)?,
-            Section::Global(_) => (), // TODO; should validate
+            Section::Global(global_section) => {
+                let mut c_prime = context.prime();
+                c_prime.instructions_should_be_constant = true;
+                section::validate_global_section(global_section, &mut c_prime)?
+            }
             Section::Export(export_section) => {
                 section::validate_export_section(export_section, &context)?
             }
