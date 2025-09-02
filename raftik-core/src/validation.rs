@@ -226,15 +226,6 @@ mod tests {
         validation::error::VInstError,
     };
 
-    impl<'a> ModuleParsed<'a> {
-        pub fn sec_by_id(&self, id: SectionID) -> Option<&Section<'a>> {
-            self.sections.iter().find(|s| s.id() == id)
-        }
-        pub fn sec_by_id_mut(&mut self, id: SectionID) -> Option<&mut Section<'a>> {
-            self.sections.iter_mut().find(|s| s.id() == id)
-        }
-    }
-
     fn with_wat(wat: impl AsRef<str>, test: impl Fn(ModuleParsed)) {
         let wasm = wat::parse_str(wat).unwrap();
         let module = ModuleParsed::from_slice(&wasm).unwrap();
