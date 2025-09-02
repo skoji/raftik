@@ -66,9 +66,15 @@ pub enum VInstError {
     #[error("no global found at index {0}")]
     NoGlobalAtIndex(u32),
 
+    #[error("no function found at index {0}")]
+    NoFunctionAtIndex(u32),
+
     #[error("opcode should be constant: {0:?}")]
     OpcodeShouldBeConstant(crate::ast::instructions::Opcode),
 
     #[error("opcode should be constants: reffering not constant; global get {0}")]
     GlobalGetShouldBeConstant(u32),
+
+    #[error("stack value should be reference type, actual: {0:?}")]
+    StackValueShouldBeRefType(crate::validation::instruction::StackValue),
 }

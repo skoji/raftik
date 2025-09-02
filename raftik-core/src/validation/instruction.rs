@@ -8,7 +8,7 @@ use super::{
 use crate::{
     ast::{
         instructions::{Opcode, RawExpression},
-        types::{FunctionType, NumberType, ValueType},
+        types::{FunctionType, NumberType, ReferenceType, ValueType},
     },
     binary::parser::instructions::parse_instruction,
 };
@@ -22,6 +22,15 @@ pub enum StackValue {
 impl StackValue {
     fn i32() -> Self {
         NumberType::I32.into()
+    }
+    fn i64() -> Self {
+        NumberType::I64.into()
+    }
+    fn f32() -> Self {
+        NumberType::F32.into()
+    }
+    fn f64() -> Self {
+        NumberType::F64.into()
     }
 }
 
@@ -80,6 +89,17 @@ fn get_global(i: u32, ctx: &Context) -> Result<ValueType, VInstError> {
     Ok(g.t().val_type)
 }
 
+fn get_func<'a>(i: u32, ctx: &'a Context) -> Result<&'a FunctionType, VInstError> {
+    let f = ctx
+        .functions
+        .get(i as usize)
+        .ok_or(VInstError::NoFunctionAtIndex(i))?;
+    ctx.types
+        .get(*f.t() as usize)
+        .cloned()
+        .ok_or(VInstError::NoFunctionAtIndex(i))
+}
+
 fn validate_opcode_variable(
     opcode: &Opcode,
     stack: &mut (impl ValueStack + ControlStack),
@@ -124,6 +144,48 @@ fn validate_opcode_numeric(
     Ok(())
 }
 
+fn validate_opcode_numeric_const(
+    opcode: &Opcode,
+    stack: &mut (impl ValueStack + ControlStack),
+    _ctx: &Context,
+) -> Result<(), VInstError> {
+    match opcode {
+        Opcode::I32Const(_) => stack.push_val(StackValue::i32()),
+        Opcode::I64Const(_) => stack.push_val(StackValue::i64()),
+        Opcode::F32Const(_) => stack.push_val(StackValue::f32()),
+        Opcode::F64Const(_) => stack.push_val(StackValue::f64()),
+        _ => unreachable!(
+            "opcode in numeric const category not processed {:?}",
+            opcode
+        ),
+    }
+    Ok(())
+}
+
+fn validate_opcode_reference(
+    opcode: &Opcode,
+    stack: &mut (impl ValueStack + ControlStack),
+    ctx: &Context,
+) -> Result<(), VInstError> {
+    match opcode {
+        Opcode::RefNull(t) => stack.push_val(ValueType::Reference(*t).into()),
+        Opcode::RefIsNull => {
+            let v = stack.pop_val()?;
+            let StackValue::Value(ValueType::Reference(_)) = v else {
+                return Err(VInstError::StackValueShouldBeRefType(v));
+            };
+            stack.push_val(StackValue::i32());
+        }
+        Opcode::RefFunc(i) => {
+            get_func(*i, ctx)?;
+            // TODO; should check i is included in refs
+            stack.push_val(ValueType::Reference(ReferenceType::FuncRef).into());
+        }
+        _ => unreachable!("opcode in reference category not processed {:?}", opcode),
+    }
+    Ok(())
+}
+
 fn validate_opcode(
     opcode: &Opcode,
     stack: &mut (impl ValueStack + ControlStack),
@@ -133,8 +195,12 @@ fn validate_opcode(
         crate::ast::instructions::OpcodeCategory::Variable => {
             validate_opcode_variable(opcode, stack, ctx)?
         }
-        crate::ast::instructions::OpcodeCategory::Reference => todo!(),
-        crate::ast::instructions::OpcodeCategory::NumericConst => todo!(),
+        crate::ast::instructions::OpcodeCategory::Reference => {
+            validate_opcode_reference(opcode, stack, ctx)?
+        }
+        crate::ast::instructions::OpcodeCategory::NumericConst => {
+            validate_opcode_numeric_const(opcode, stack, ctx)?
+        }
         crate::ast::instructions::OpcodeCategory::Numeric => {
             validate_opcode_numeric(opcode, stack, ctx)?
         }
