@@ -65,7 +65,7 @@ trait ControlStack {
     fn get_clone_of_control_stack(&self) -> Vec<ControlFrame>;
 }
 
-fn validate_opcode(
+fn validate_opcode_variable(
     opcode: &Opcode,
     stack: &mut (impl ValueStack + ControlStack),
     ctx: &mut Context,
@@ -78,12 +78,41 @@ fn validate_opcode(
                 .ok_or(VInstError::NoLocalAtIndex(*index))?;
             stack.push_val(StackValue::Value(*t));
         }
+        _ => unreachable!("opcode in variable caregoty not processed {:?}", opcode),
+    }
+    Ok(())
+}
+
+fn validate_opcode_numeric(
+    opcode: &Opcode,
+    stack: &mut (impl ValueStack + ControlStack),
+    _ctx: &mut Context,
+) -> Result<(), VInstError> {
+    match opcode {
         Opcode::I32Add => {
             stack.pop_expect_val(StackValue::i32())?;
             stack.pop_expect_val(StackValue::i32())?;
             stack.push_val(StackValue::i32());
         }
-        _ => todo!(),
+        _ => unreachable!("opcode in numeric category not processed {:?}", opcode),
+    }
+    Ok(())
+}
+
+fn validate_opcode(
+    opcode: &Opcode,
+    stack: &mut (impl ValueStack + ControlStack),
+    ctx: &mut Context,
+) -> Result<(), VInstError> {
+    match opcode.category() {
+        crate::ast::instructions::OpcodeCategory::Variable => {
+            validate_opcode_variable(opcode, stack, ctx)?
+        }
+        crate::ast::instructions::OpcodeCategory::Reference => todo!(),
+        crate::ast::instructions::OpcodeCategory::NumericConst => todo!(),
+        crate::ast::instructions::OpcodeCategory::Numeric => {
+            validate_opcode_numeric(opcode, stack, ctx)?
+        }
     }
 
     if ctx.instructions_should_be_constant {

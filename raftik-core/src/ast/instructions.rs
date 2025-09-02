@@ -22,6 +22,14 @@ pub enum Opcode {
     I32Add,
 }
 
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum OpcodeCategory {
+    Variable,
+    Reference,
+    NumericConst,
+    Numeric,
+}
+
 impl Opcode {
     pub fn is_constant(&self) -> bool {
         matches!(
@@ -34,5 +42,23 @@ impl Opcode {
                 | Opcode::RefNull(..)
                 | Opcode::RefFunc(..)
         )
+    }
+
+    pub fn category(&self) -> OpcodeCategory {
+        match self {
+            Opcode::LocalGet(_)
+            | Opcode::LocalSet(_)
+            | Opcode::LocalTee(_)
+            | Opcode::GlobalGet(_)
+            | Opcode::GlobalSet(_) => OpcodeCategory::Variable,
+            Opcode::I32Const(_)
+            | Opcode::I64Const(_)
+            | Opcode::F32Const(_)
+            | Opcode::F64Const(_) => OpcodeCategory::NumericConst,
+            Opcode::RefFunc(_) | Opcode::RefNull(_) | Opcode::RefIsNull => {
+                OpcodeCategory::Reference
+            }
+            Opcode::I32Add => OpcodeCategory::Numeric,
+        }
     }
 }
