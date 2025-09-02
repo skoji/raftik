@@ -65,18 +65,43 @@ trait ControlStack {
     fn get_clone_of_control_stack(&self) -> Vec<ControlFrame>;
 }
 
+fn get_local(i: u32, ctx: &Context) -> Result<ValueType, VInstError> {
+    ctx.locals
+        .get(i as usize)
+        .ok_or(VInstError::NoLocalAtIndex(i))
+        .cloned()
+}
+
+fn get_global(i: u32, ctx: &Context) -> Result<ValueType, VInstError> {
+    let g = ctx
+        .globals
+        .get(i as usize)
+        .ok_or(VInstError::NoGlobalAtIndex(i))?;
+    Ok(g.t().val_type)
+}
+
 fn validate_opcode_variable(
     opcode: &Opcode,
     stack: &mut (impl ValueStack + ControlStack),
     ctx: &mut Context,
 ) -> Result<(), VInstError> {
     match opcode {
-        Opcode::LocalGet(index) => {
-            let t = ctx
-                .locals
-                .get(*index as usize)
-                .ok_or(VInstError::NoLocalAtIndex(*index))?;
-            stack.push_val(StackValue::Value(*t));
+        Opcode::LocalGet(i) => {
+            stack.push_val(StackValue::Value(get_local(*i, ctx)?));
+        }
+        Opcode::LocalSet(i) => {
+            stack.pop_expect_val(StackValue::Value(get_local(*i, ctx)?))?;
+        }
+        Opcode::LocalTee(i) => {
+            let t = get_local(*i, ctx)?;
+            stack.pop_expect_val(StackValue::Value(t))?;
+            stack.push_val(StackValue::Value(t));
+        }
+        Opcode::GlobalGet(i) => {
+            stack.push_val(StackValue::Value(get_global(*i, ctx)?));
+        }
+        Opcode::GlobalSet(i) => {
+            stack.pop_expect_val(StackValue::Value(get_global(*i, ctx)?))?;
         }
         _ => unreachable!("opcode in variable caregoty not processed {:?}", opcode),
     }
