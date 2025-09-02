@@ -343,4 +343,29 @@ mod tests {
             }
         });
     }
+
+    #[test]
+    fn test_global_section_with_function_ref() {
+        with_wat(
+            "(module (global funcref ref.func 0) (func (param i32) (param i32) (result i32) local.get 0 local.get 1 i32.add))",
+            |module| {
+                assert!(validate_module(&module).is_ok());
+            },
+        );
+    }
+
+    #[test]
+    fn test_global_section_with_invalid_static() {
+        with_wat(
+            "(module (global i32 i32.const 0 i32.const 1 i32.add) (func (param i32) (param i32) (result i32) local.get 0 local.get 1 i32.add))",
+            |module| {
+                let r = validate_module(&module);
+                if let Err(ValidationError::InstructionValidationError { error: e, .. }) = r {
+                    assert!(matches!(e, VInstError::OpcodeShouldBeConstant(_)));
+                } else {
+                    unreachable!("result not expected: {:#?}", r);
+                }
+            },
+        );
+    }
 }
