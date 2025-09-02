@@ -28,6 +28,9 @@ pub enum ValidationError {
         control_stack: Vec<crate::validation::instruction::ControlFrame>,
     },
 
+    #[error("collect func ref from expression error")]
+    CollectFuncRefFromExprError { desc: String, error: VInstError },
+
     #[error("table is invalid: index {index}, Limits: {limits:?}, system maximum: {maximum}")]
     TableSizeError {
         index: usize,

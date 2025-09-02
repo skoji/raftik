@@ -3,11 +3,14 @@ mod instruction;
 mod section;
 mod types;
 
+use std::collections::HashSet;
+
 use error::ValidationError;
 
 use crate::ast::{
     ModuleParsed, Section,
-    types::{FunctionType, GlobalType, MemoryType, TableType, ValueType},
+    section::ExportDesc,
+    types::{FunctionType, GlobalType, MemoryType, ReferenceType, TableType, ValueType},
 };
 
 #[allow(dead_code)]
@@ -60,6 +63,7 @@ struct Context<'a> {
     pub memories: Vec<&'a MemoryType>,
     pub globals: Vec<ItemDesc<&'a GlobalType>>,
     pub locals: Vec<ValueType>,
+    pub refs: HashSet<u32>,
     pub instructions_should_be_constant: bool,
 }
 
@@ -72,6 +76,7 @@ impl<'a> Context<'a> {
             memories: self.memories.clone(),
             globals: self.globals.imported(),
             locals: self.locals.clone(),
+            refs: self.refs.clone(),
             instructions_should_be_constant: self.instructions_should_be_constant,
         }
     }
@@ -124,17 +129,54 @@ fn initialize_context<'a>(module: &'a ModuleParsed<'a>) -> Result<Context<'a>, V
                 }
             }
             Section::Global(global_section) => {
-                for g in global_section
-                    .globals
-                    .iter()
-                    .map(|g| ItemDesc::Internal { t: &g.global_type })
-                {
+                for (i, g) in global_section.globals.iter().enumerate() {
+                    if let ValueType::Reference(ReferenceType::FuncRef) = g.global_type.val_type {
+                        instruction::collect_funcref_in_expression(
+                            &g.expression,
+                            &mut context.refs,
+                            format!("in global section {}", i),
+                        )?;
+                    }
+                    let g = ItemDesc::Internal { t: &g.global_type };
                     context.globals.push(g);
                 }
             }
-            Section::Export(_) => (),
+            Section::Export(export_section) => {
+                for e in export_section.exports.iter() {
+                    if let ExportDesc::FunctionIndex(i) = e.desc {
+                        context.refs.insert(i);
+                    }
+                }
+            }
             Section::Start(_) => (),
-            Section::Element(_) => (),
+            Section::Element(element_section) => {
+                for (i, e) in element_section.elements.iter().enumerate() {
+                    match &e.items {
+                        crate::ast::section::ElementItems::Functions(items) => {
+                            for i in items {
+                                context.refs.insert(*i);
+                            }
+                        }
+                        crate::ast::section::ElementItems::Expressions(
+                            reference_type,
+                            raw_expressions,
+                        ) => {
+                            if *reference_type == ReferenceType::FuncRef {
+                                for (j, exp) in raw_expressions.iter().enumerate() {
+                                    instruction::collect_funcref_in_expression(
+                                        exp,
+                                        &mut context.refs,
+                                        format!(
+                                            "in element section item #{}, expression #{}",
+                                            i, j
+                                        ),
+                                    )?;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             Section::Code(_) => (),
             Section::Data(_) => (),
             Section::DataCount(_) => (),

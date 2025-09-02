@@ -1,4 +1,6 @@
 mod stacks;
+use std::collections::HashSet;
+
 use nom::combinator::iterator;
 
 use super::{
@@ -263,4 +265,23 @@ pub fn validate_raw_expression(
             control_stack: stack.get_clone_of_control_stack(),
         }
     })
+}
+
+pub fn collect_funcref_in_expression(
+    expr: &RawExpression,
+    r: &mut HashSet<u32>,
+    desc_on_error: String,
+) -> Result<(), ValidationError> {
+    let mut it = iterator(expr.instructions, parse_instruction);
+    for opcode in &mut it {
+        if let Opcode::RefFunc(i) = opcode {
+            r.insert(i);
+        };
+    }
+    it.finish()
+        .map_err(|e| ValidationError::CollectFuncRefFromExprError {
+            desc: desc_on_error,
+            error: VInstError::OpcodeParseFailed(e.to_string()),
+        })?;
+    Ok(())
 }
