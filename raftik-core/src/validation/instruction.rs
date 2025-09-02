@@ -102,6 +102,14 @@ fn get_func<'a>(i: u32, ctx: &'a Context) -> Result<&'a FunctionType, VInstError
         .ok_or(VInstError::NoFunctionAtIndex(i))
 }
 
+fn check_refs(i: u32, ctx: &Context) -> Result<(), VInstError> {
+    if !ctx.refs.contains(&i) {
+        Err(VInstError::NotIncludedInRefs(i))
+    } else {
+        Ok(())
+    }
+}
+
 fn validate_opcode_variable(
     opcode: &Opcode,
     stack: &mut (impl ValueStack + ControlStack),
@@ -180,7 +188,7 @@ fn validate_opcode_reference(
         }
         Opcode::RefFunc(i) => {
             get_func(*i, ctx)?;
-            // TODO; should check i is included in refs
+            check_refs(*i, ctx)?;
             stack.push_val(ValueType::Reference(ReferenceType::FuncRef).into());
         }
         _ => unreachable!("opcode in reference category not processed {:?}", opcode),

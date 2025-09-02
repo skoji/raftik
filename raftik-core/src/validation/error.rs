@@ -72,6 +72,9 @@ pub enum VInstError {
     #[error("no function found at index {0}")]
     NoFunctionAtIndex(u32),
 
+    #[error("not included in refs: {0}")]
+    NotIncludedInRefs(u32),
+
     #[error("opcode should be constant: {0:?}")]
     OpcodeShouldBeConstant(crate::ast::instructions::Opcode),
 
