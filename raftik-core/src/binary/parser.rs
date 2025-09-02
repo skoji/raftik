@@ -114,6 +114,69 @@ mod tests {
         );
     }
     #[test]
+    fn test_wasm_with_multiple_imports() {
+        with_wat(
+            r#"(module
+  (import "console" "log" (func $log (param i32)))
+  (import "host" "table" (table  1 10 funcref))
+  (import "host" "memory" (memory 1 2))
+  (global (import "host" "global") i64))"#,
+            |module| {
+                if let Section::Import(s) = module.sec_by_id(SectionID::Import).unwrap() {
+                    assert_eq!(s.imports.len(), 4);
+                    assert_eq!(
+                        s.imports[0],
+                        Import {
+                            module: "console".to_string(),
+                            name: "log".to_string(),
+                            desc: ImportDesc::TypeIndex(0)
+                        }
+                    );
+                    assert_eq!(
+                        s.imports[1],
+                        Import {
+                            module: "host".to_string(),
+                            name: "table".to_string(),
+                            desc: ImportDesc::Table(TableType {
+                                ref_type: ReferenceType::FuncRef,
+                                limits: Limits {
+                                    min: 1,
+                                    max: Some(10)
+                                }
+                            })
+                        }
+                    );
+                    assert_eq!(
+                        s.imports[2],
+                        Import {
+                            module: "host".to_string(),
+                            name: "memory".to_string(),
+                            desc: ImportDesc::Memory(MemoryType {
+                                limits: Limits {
+                                    min: 1,
+                                    max: Some(2)
+                                }
+                            })
+                        }
+                    );
+                    assert_eq!(
+                        s.imports[3],
+                        Import {
+                            module: "host".to_string(),
+                            name: "global".to_string(),
+                            desc: ImportDesc::Global(GlobalType {
+                                val_type: ValueType::Number(NumberType::I64),
+                                mutability: Mutability::Const
+                            })
+                        }
+                    );
+                } else {
+                    unreachable!()
+                }
+            },
+        )
+    }
+    #[test]
     fn test_wasm_with_function_section() {
         with_wat(
             "(module (func (param $l i32) (result i32) local.get $l))",
