@@ -1,4 +1,6 @@
 mod stacks;
+use std::collections::HashSet;
+
 use nom::combinator::iterator;
 
 use super::{
@@ -8,7 +10,7 @@ use super::{
 use crate::{
     ast::{
         instructions::{Opcode, RawExpression},
-        types::{FunctionType, NumberType, ValueType},
+        types::{FunctionType, NumberType, ReferenceType, ValueType},
     },
     binary::parser::instructions::parse_instruction,
 };
@@ -22,6 +24,15 @@ pub enum StackValue {
 impl StackValue {
     fn i32() -> Self {
         NumberType::I32.into()
+    }
+    fn i64() -> Self {
+        NumberType::I64.into()
+    }
+    fn f32() -> Self {
+        NumberType::F32.into()
+    }
+    fn f64() -> Self {
+        NumberType::F64.into()
     }
 }
 
@@ -65,25 +76,158 @@ trait ControlStack {
     fn get_clone_of_control_stack(&self) -> Vec<ControlFrame>;
 }
 
-fn validate_opcode(
+fn get_local(i: u32, ctx: &Context) -> Result<ValueType, VInstError> {
+    ctx.locals
+        .get(i as usize)
+        .ok_or(VInstError::NoLocalAtIndex(i))
+        .cloned()
+}
+
+fn get_global(i: u32, ctx: &Context) -> Result<ValueType, VInstError> {
+    let g = ctx
+        .globals
+        .get(i as usize)
+        .ok_or(VInstError::NoGlobalAtIndex(i))?;
+    Ok(g.t().val_type)
+}
+
+fn get_func<'a>(i: u32, ctx: &'a Context) -> Result<&'a FunctionType, VInstError> {
+    let f = ctx
+        .functions
+        .get(i as usize)
+        .ok_or(VInstError::NoFunctionAtIndex(i))?;
+    ctx.types
+        .get(*f.t() as usize)
+        .cloned()
+        .ok_or(VInstError::NoFunctionAtIndex(i))
+}
+
+fn check_refs(i: u32, ctx: &Context) -> Result<(), VInstError> {
+    if !ctx.refs.contains(&i) {
+        Err(VInstError::NotIncludedInRefs(i))
+    } else {
+        Ok(())
+    }
+}
+
+fn validate_opcode_variable(
     opcode: &Opcode,
     stack: &mut (impl ValueStack + ControlStack),
     ctx: &mut Context,
 ) -> Result<(), VInstError> {
     match opcode {
-        Opcode::LocalGet(index) => {
-            let t = ctx
-                .locals
-                .get(*index as usize)
-                .ok_or(VInstError::NoLocalAtIndex(*index))?;
-            stack.push_val(StackValue::Value(*t));
+        Opcode::LocalGet(i) => {
+            stack.push_val(StackValue::Value(get_local(*i, ctx)?));
         }
+        Opcode::LocalSet(i) => {
+            stack.pop_expect_val(StackValue::Value(get_local(*i, ctx)?))?;
+        }
+        Opcode::LocalTee(i) => {
+            let t = get_local(*i, ctx)?;
+            stack.pop_expect_val(StackValue::Value(t))?;
+            stack.push_val(StackValue::Value(t));
+        }
+        Opcode::GlobalGet(i) => {
+            stack.push_val(StackValue::Value(get_global(*i, ctx)?));
+        }
+        Opcode::GlobalSet(i) => {
+            stack.pop_expect_val(StackValue::Value(get_global(*i, ctx)?))?;
+        }
+        _ => unreachable!("opcode in variable category not processed {:?}", opcode),
+    }
+    Ok(())
+}
+
+fn validate_opcode_numeric(
+    opcode: &Opcode,
+    stack: &mut (impl ValueStack + ControlStack),
+    _ctx: &mut Context,
+) -> Result<(), VInstError> {
+    match opcode {
         Opcode::I32Add => {
             stack.pop_expect_val(StackValue::i32())?;
             stack.pop_expect_val(StackValue::i32())?;
             stack.push_val(StackValue::i32());
         }
+        _ => unreachable!("opcode in numeric category not processed {:?}", opcode),
     }
+    Ok(())
+}
+
+fn validate_opcode_numeric_const(
+    opcode: &Opcode,
+    stack: &mut (impl ValueStack + ControlStack),
+    _ctx: &Context,
+) -> Result<(), VInstError> {
+    match opcode {
+        Opcode::I32Const(_) => stack.push_val(StackValue::i32()),
+        Opcode::I64Const(_) => stack.push_val(StackValue::i64()),
+        Opcode::F32Const(_) => stack.push_val(StackValue::f32()),
+        Opcode::F64Const(_) => stack.push_val(StackValue::f64()),
+        _ => unreachable!(
+            "opcode in numeric const category not processed {:?}",
+            opcode
+        ),
+    }
+    Ok(())
+}
+
+fn validate_opcode_reference(
+    opcode: &Opcode,
+    stack: &mut (impl ValueStack + ControlStack),
+    ctx: &Context,
+) -> Result<(), VInstError> {
+    match opcode {
+        Opcode::RefNull(t) => stack.push_val(ValueType::Reference(*t).into()),
+        Opcode::RefIsNull => {
+            let v = stack.pop_val()?;
+            let StackValue::Value(ValueType::Reference(_)) = v else {
+                return Err(VInstError::StackValueShouldBeRefType(v));
+            };
+            stack.push_val(StackValue::i32());
+        }
+        Opcode::RefFunc(i) => {
+            get_func(*i, ctx)?;
+            check_refs(*i, ctx)?;
+            stack.push_val(ValueType::Reference(ReferenceType::FuncRef).into());
+        }
+        _ => unreachable!("opcode in reference category not processed {:?}", opcode),
+    }
+    Ok(())
+}
+
+fn validate_opcode(
+    opcode: &Opcode,
+    stack: &mut (impl ValueStack + ControlStack),
+    ctx: &mut Context,
+) -> Result<(), VInstError> {
+    match opcode.category() {
+        crate::ast::instructions::OpcodeCategory::Variable => {
+            validate_opcode_variable(opcode, stack, ctx)?
+        }
+        crate::ast::instructions::OpcodeCategory::Reference => {
+            validate_opcode_reference(opcode, stack, ctx)?
+        }
+        crate::ast::instructions::OpcodeCategory::NumericConst => {
+            validate_opcode_numeric_const(opcode, stack, ctx)?
+        }
+        crate::ast::instructions::OpcodeCategory::Numeric => {
+            validate_opcode_numeric(opcode, stack, ctx)?
+        }
+    }
+
+    if ctx.instructions_should_be_constant {
+        if !opcode.is_constant() {
+            return Err(VInstError::OpcodeShouldBeConstant(*opcode));
+        }
+        if let Opcode::GlobalGet(i) = opcode {
+            let g = *ctx.globals[*i as usize].t();
+            if !matches!(g.mutability, crate::ast::types::Mutability::Const) {
+                return Err(VInstError::GlobalGetShouldBeConstant(*i));
+            }
+        }
+    }
+
     Ok(())
 }
 
@@ -129,4 +273,23 @@ pub fn validate_raw_expression(
             control_stack: stack.get_clone_of_control_stack(),
         }
     })
+}
+
+pub fn collect_funcref_in_expression(
+    expr: &RawExpression,
+    r: &mut HashSet<u32>,
+    desc_on_error: String,
+) -> Result<(), ValidationError> {
+    let mut it = iterator(expr.instructions, parse_instruction);
+    for opcode in &mut it {
+        if let Opcode::RefFunc(i) = opcode {
+            r.insert(i);
+        };
+    }
+    it.finish()
+        .map_err(|e| ValidationError::CollectFuncRefFromExprError {
+            desc: desc_on_error,
+            error: VInstError::OpcodeParseFailed(e.to_string()),
+        })?;
+    Ok(())
 }

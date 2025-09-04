@@ -1,6 +1,9 @@
-use super::{Context, error::ValidationError, types};
-use crate::ast::section::{
-    CodeSection, ExportSection, FunctionSection, MemorySection, TableSection,
+use super::{Context, ItemFilter, error::ValidationError, types};
+use crate::ast::{
+    section::{
+        CodeSection, ExportSection, FunctionSection, GlobalSection, MemorySection, TableSection,
+    },
+    types::FunctionType,
 };
 
 macro_rules! validate_index {
@@ -55,16 +58,21 @@ pub fn validate_code_section<'a>(
     code_section: &'a CodeSection<'a>,
     context: &mut Context<'a>,
 ) -> Result<(), ValidationError> {
-    let funcs_declared = context.functions.len();
+    let funcs_declared: Vec<_> = context
+        .functions
+        .internal()
+        .iter()
+        .map(|x| *x.t())
+        .collect();
     let code_bodies = code_section.code.len();
-    if funcs_declared != code_bodies {
+    if funcs_declared.len() != code_bodies {
         return Err(ValidationError::CodeSectionLengthMismatch {
-            funcs_declared,
+            funcs_declared: funcs_declared.len(),
             code_bodies,
         });
     }
     for (i, funcbody) in code_section.code.iter().enumerate() {
-        let type_index = context.functions[i];
+        let type_index = funcs_declared[i];
         let func_type = context.types[type_index as usize];
 
         context.locals.clear();
@@ -111,6 +119,25 @@ pub fn validate_memory_section(memory_section: &MemorySection) -> Result<(), Val
                 maximum: MAX_PAGES_SIZE,
             });
         }
+    }
+    Ok(())
+}
+
+pub fn validate_global_section(
+    global_section: &GlobalSection,
+    ctx: &mut Context,
+) -> Result<(), ValidationError> {
+    for (i, g) in global_section.globals.iter().enumerate() {
+        let f = FunctionType {
+            params: vec![],
+            results: vec![g.global_type.val_type],
+        };
+        super::instruction::validate_raw_expression(
+            ctx,
+            &f,
+            &g.expression,
+            format!("at global section {}", i),
+        )?;
     }
     Ok(())
 }

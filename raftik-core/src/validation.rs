@@ -3,21 +3,83 @@ mod instruction;
 mod section;
 mod types;
 
+use std::collections::HashSet;
+
 use error::ValidationError;
 
 use crate::ast::{
     ModuleParsed, Section,
-    types::{FunctionType, GlobalType, MemoryType, TableType, ValueType},
+    section::ExportDesc,
+    types::{FunctionType, GlobalType, MemoryType, ReferenceType, TableType, ValueType},
 };
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+enum ItemDesc<T: Clone> {
+    Internal { t: T },
+    Imported { module: String, name: String, t: T },
+}
+
+impl<T: Clone> ItemDesc<T> {
+    fn t(&self) -> &T {
+        match self {
+            ItemDesc::Internal { t } => t,
+            ItemDesc::Imported { t, .. } => t,
+        }
+    }
+}
+
+trait ItemFilter<T: Clone> {
+    fn internal(&self) -> Vec<ItemDesc<T>>;
+    fn imported(&self) -> Vec<ItemDesc<T>>;
+}
+
+impl<T: Clone> ItemFilter<T> for Vec<ItemDesc<T>> {
+    fn internal(&self) -> Vec<ItemDesc<T>> {
+        self.iter()
+            .filter(|x| match x {
+                ItemDesc::Internal { .. } => true,
+                ItemDesc::Imported { .. } => false,
+            })
+            .cloned()
+            .collect()
+    }
+    fn imported(&self) -> Vec<ItemDesc<T>> {
+        self.iter()
+            .filter(|x| match x {
+                ItemDesc::Internal { .. } => false,
+                ItemDesc::Imported { .. } => true,
+            })
+            .cloned()
+            .collect()
+    }
+}
 
 #[derive(Default, Debug)]
 struct Context<'a> {
     pub types: Vec<&'a FunctionType>,
-    pub functions: Vec<u32>,
+    pub functions: Vec<ItemDesc<u32>>,
     pub tables: Vec<&'a TableType>,
     pub memories: Vec<&'a MemoryType>,
-    pub globals: Vec<&'a GlobalType>,
+    pub globals: Vec<ItemDesc<&'a GlobalType>>,
     pub locals: Vec<ValueType>,
+    pub refs: HashSet<u32>,
+    pub instructions_should_be_constant: bool,
+}
+
+impl<'a> Context<'a> {
+    pub fn prime(&mut self) -> Self {
+        Context {
+            types: self.types.clone(),
+            functions: self.functions.clone(),
+            tables: self.tables.clone(),
+            memories: self.memories.clone(),
+            globals: self.globals.imported(),
+            locals: self.locals.clone(),
+            refs: self.refs.clone(),
+            instructions_should_be_constant: self.instructions_should_be_constant,
+        }
+    }
 }
 
 fn initialize_context<'a>(module: &'a ModuleParsed<'a>) -> Result<Context<'a>, ValidationError> {
@@ -25,24 +87,96 @@ fn initialize_context<'a>(module: &'a ModuleParsed<'a>) -> Result<Context<'a>, V
     for section in module.sections.iter() {
         match section {
             Section::Type(type_section) => context.types = type_section.types.iter().collect(),
-            Section::Import(_) => (),
-            Section::Function(function_section) => {
-                context.functions = function_section.type_indices.to_vec()
+            Section::Import(import_section) => {
+                for i in &import_section.imports {
+                    match &i.desc {
+                        crate::ast::section::ImportDesc::TypeIndex(t) => {
+                            context.functions.push(ItemDesc::Imported {
+                                name: i.name.clone(),
+                                module: i.module.clone(),
+                                t: *t,
+                            });
+                        }
+                        crate::ast::section::ImportDesc::Table(table_type) => {
+                            context.tables.push(table_type);
+                        }
+                        crate::ast::section::ImportDesc::Memory(memory_type) => {
+                            context.memories.push(memory_type);
+                        }
+                        crate::ast::section::ImportDesc::Global(t) => {
+                            context.globals.push(ItemDesc::Imported {
+                                name: i.name.clone(),
+                                module: i.module.clone(),
+                                t,
+                            });
+                        }
+                    }
+                }
             }
-            Section::Table(table_section) => context.tables = table_section.tables.iter().collect(),
+            Section::Function(function_section) => {
+                for t in function_section.type_indices.iter() {
+                    context.functions.push(ItemDesc::Internal { t: *t });
+                }
+            }
+            Section::Table(table_section) => {
+                for t in table_section.tables.iter() {
+                    context.tables.push(t);
+                }
+            }
             Section::Memory(memory_section) => {
-                context.memories = memory_section.memories.iter().collect()
+                for m in memory_section.memories.iter() {
+                    context.memories.push(m);
+                }
             }
             Section::Global(global_section) => {
-                context.globals = global_section
-                    .globals
-                    .iter()
-                    .map(|g| &g.global_type)
-                    .collect()
+                for (i, g) in global_section.globals.iter().enumerate() {
+                    if let ValueType::Reference(ReferenceType::FuncRef) = g.global_type.val_type {
+                        instruction::collect_funcref_in_expression(
+                            &g.expression,
+                            &mut context.refs,
+                            format!("in global section {}", i),
+                        )?;
+                    }
+                    let g = ItemDesc::Internal { t: &g.global_type };
+                    context.globals.push(g);
+                }
             }
-            Section::Export(_) => (),
+            Section::Export(export_section) => {
+                for e in export_section.exports.iter() {
+                    if let ExportDesc::FunctionIndex(i) = e.desc {
+                        context.refs.insert(i);
+                    }
+                }
+            }
             Section::Start(_) => (),
-            Section::Element(_) => (),
+            Section::Element(element_section) => {
+                for (i, e) in element_section.elements.iter().enumerate() {
+                    match &e.items {
+                        crate::ast::section::ElementItems::Functions(items) => {
+                            for i in items {
+                                context.refs.insert(*i);
+                            }
+                        }
+                        crate::ast::section::ElementItems::Expressions(
+                            reference_type,
+                            raw_expressions,
+                        ) => {
+                            if *reference_type == ReferenceType::FuncRef {
+                                for (j, exp) in raw_expressions.iter().enumerate() {
+                                    instruction::collect_funcref_in_expression(
+                                        exp,
+                                        &mut context.refs,
+                                        format!(
+                                            "in element section item #{}, expression #{}",
+                                            i, j
+                                        ),
+                                    )?;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             Section::Code(_) => (),
             Section::Data(_) => (),
             Section::DataCount(_) => (),
@@ -63,7 +197,11 @@ pub fn validate_module(module: &ModuleParsed) -> Result<(), ValidationError> {
             }
             Section::Table(table_section) => section::validate_table_section(table_section)?,
             Section::Memory(memory_section) => section::validate_memory_section(memory_section)?,
-            Section::Global(_) => (), // TODO; should validate
+            Section::Global(global_section) => {
+                let mut c_prime = context.prime();
+                c_prime.instructions_should_be_constant = true;
+                section::validate_global_section(global_section, &mut c_prime)?
+            }
             Section::Export(export_section) => {
                 section::validate_export_section(export_section, &context)?
             }
@@ -87,15 +225,6 @@ mod tests {
         ast::{ModuleParsed, section::SectionID, types::*},
         validation::error::VInstError,
     };
-
-    impl<'a> ModuleParsed<'a> {
-        pub fn sec_by_id(&self, id: SectionID) -> Option<&Section<'a>> {
-            self.sections.iter().find(|s| s.id() == id)
-        }
-        pub fn sec_by_id_mut(&mut self, id: SectionID) -> Option<&mut Section<'a>> {
-            self.sections.iter_mut().find(|s| s.id() == id)
-        }
-    }
 
     fn with_wat(wat: impl AsRef<str>, test: impl Fn(ModuleParsed)) {
         let wasm = wat::parse_str(wat).unwrap();
@@ -204,5 +333,101 @@ mod tests {
                 },
             }
         });
+    }
+
+    #[test]
+    fn test_global_section_with_function_ref() {
+        with_wat(
+            "(module (global funcref ref.func 0) (func (param i32) (param i32) (result i32) local.get 0 local.get 1 i32.add))",
+            |module| {
+                assert!(validate_module(&module).is_ok());
+            },
+        );
+    }
+
+    #[test]
+    fn test_global_section_with_invalid_static() {
+        with_wat(
+            "(module (global i32 i32.const 0 i32.const 1 i32.add) (func (param i32) (param i32) (result i32) local.get 0 local.get 1 i32.add))",
+            |module| {
+                let r = validate_module(&module);
+                if let Err(ValidationError::InstructionValidationError { error: e, .. }) = r {
+                    assert!(matches!(e, VInstError::OpcodeShouldBeConstant(_)));
+                } else {
+                    unreachable!("result not expected: {:#?}", r);
+                }
+            },
+        );
+    }
+
+    #[test]
+    fn test_invalid_func_ref() {
+        with_wat("(module (func (result funcref) ref.func 0))", |module| {
+            let r = validate_module(&module);
+            if let Err(ValidationError::InstructionValidationError { error: e, .. }) = r {
+                assert!(matches!(e, VInstError::NotIncludedInRefs(_)));
+            } else {
+                unreachable!("result not expected: {:#?}", r);
+            }
+        });
+    }
+
+    #[test]
+    fn test_valid_func_ref_declared_in_export() {
+        with_wat(
+            r#"(module (export "self" (func 0)) (func (result funcref) ref.func 0))"#,
+            |module| {
+                let r = validate_module(&module);
+                assert!(r.is_ok(), "{:#?}", r);
+            },
+        );
+    }
+
+    #[test]
+    fn test_invalid_func_ref_declared_in_import() {
+        with_wat(
+            r#"(module (import "host" "log" (func $host (param i32))) (func $refrunf (result funcref) ref.func 0))"#,
+            |module| {
+                let r = validate_module(&module);
+                if let Err(ValidationError::InstructionValidationError { error: e, .. }) = r {
+                    assert!(matches!(e, VInstError::NotIncludedInRefs(_)));
+                } else {
+                    unreachable!("result not expected: {:#?}", r);
+                }
+            },
+        );
+    }
+
+    #[test]
+    fn test_valid_func_ref_declared_in_element() {
+        with_wat(
+            r#"(module (import "host" "log" (func $host (param i32))) (elem declare funcref (ref.func 1)) (func $self (result funcref) ref.func 1))"#,
+            |module| {
+                let r = validate_module(&module);
+                assert!(r.is_ok(), "{:#?}", r);
+            },
+        );
+    }
+
+    #[test]
+    fn test_valid_func_ref_declared_in_element_2() {
+        with_wat(
+            r#"(module (import "host" "log" (func $host (param i32))) (elem func 1) (func $self (result funcref) ref.func 1))"#,
+            |module| {
+                let r = validate_module(&module);
+                assert!(r.is_ok(), "{:#?}", r);
+            },
+        );
+    }
+
+    #[test]
+    fn test_valid_func_ref_declared_in_global() {
+        with_wat(
+            r#"(module (global funcref(ref.func 0)) (func $self (result funcref) ref.func 0))"#,
+            |module| {
+                let r = validate_module(&module);
+                assert!(r.is_ok(), "{:#?}", r);
+            },
+        );
     }
 }

@@ -28,6 +28,9 @@ pub enum ValidationError {
         control_stack: Vec<crate::validation::instruction::ControlFrame>,
     },
 
+    #[error("collect func ref from expression error")]
+    CollectFuncRefFromExprError { desc: String, error: VInstError },
+
     #[error("table is invalid: index {index}, Limits: {limits:?}, system maximum: {maximum}")]
     TableSizeError {
         index: usize,
@@ -62,4 +65,22 @@ pub enum VInstError {
 
     #[error("no local found at index {0}")]
     NoLocalAtIndex(u32),
+
+    #[error("no global found at index {0}")]
+    NoGlobalAtIndex(u32),
+
+    #[error("no function found at index {0}")]
+    NoFunctionAtIndex(u32),
+
+    #[error("not included in refs: {0}")]
+    NotIncludedInRefs(u32),
+
+    #[error("opcode should be constant: {0:?}")]
+    OpcodeShouldBeConstant(crate::ast::instructions::Opcode),
+
+    #[error("opcode should be constants: referring not constant; global get {0}")]
+    GlobalGetShouldBeConstant(u32),
+
+    #[error("stack value should be reference type, actual: {0:?}")]
+    StackValueShouldBeRefType(crate::validation::instruction::StackValue),
 }
