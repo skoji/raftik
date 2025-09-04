@@ -359,4 +359,75 @@ mod tests {
             },
         );
     }
+
+    #[test]
+    fn test_invalid_func_ref() {
+        with_wat("(module (func (result funcref) ref.func 0))", |module| {
+            let r = validate_module(&module);
+            if let Err(ValidationError::InstructionValidationError { error: e, .. }) = r {
+                assert!(matches!(e, VInstError::NotIncludedInRefs(_)));
+            } else {
+                unreachable!("result not expected: {:#?}", r);
+            }
+        });
+    }
+
+    #[test]
+    fn test_valid_func_ref_declared_in_export() {
+        with_wat(
+            r#"(module (export "self" (func 0)) (func (result funcref) ref.func 0))"#,
+            |module| {
+                let r = validate_module(&module);
+                assert!(r.is_ok(), "{:#?}", r);
+            },
+        );
+    }
+
+    #[test]
+    fn test_invalid_func_ref_declared_in_import() {
+        with_wat(
+            r#"(module (import "host" "log" (func $host (param i32))) (func $refrunf (result funcref) ref.func 0))"#,
+            |module| {
+                let r = validate_module(&module);
+                if let Err(ValidationError::InstructionValidationError { error: e, .. }) = r {
+                    assert!(matches!(e, VInstError::NotIncludedInRefs(_)));
+                } else {
+                    unreachable!("result not expected: {:#?}", r);
+                }
+            },
+        );
+    }
+
+    #[test]
+    fn test_valid_func_ref_declared_in_element() {
+        with_wat(
+            r#"(module (import "host" "log" (func $host (param i32))) (elem declare funcref (ref.func 1)) (func $self (result funcref) ref.func 1))"#,
+            |module| {
+                let r = validate_module(&module);
+                assert!(r.is_ok(), "{:#?}", r);
+            },
+        );
+    }
+
+    #[test]
+    fn test_valid_func_ref_declared_in_element_2() {
+        with_wat(
+            r#"(module (import "host" "log" (func $host (param i32))) (elem func 1) (func $self (result funcref) ref.func 1))"#,
+            |module| {
+                let r = validate_module(&module);
+                assert!(r.is_ok(), "{:#?}", r);
+            },
+        );
+    }
+
+    #[test]
+    fn test_valid_func_ref_declared_in_global() {
+        with_wat(
+            r#"(module (global funcref(ref.func 0)) (func $self (result funcref) ref.func 0))"#,
+            |module| {
+                let r = validate_module(&module);
+                assert!(r.is_ok(), "{:#?}", r);
+            },
+        );
+    }
 }
