@@ -133,7 +133,7 @@ fn validate_opcode_variable(
         Opcode::GlobalSet(i) => {
             stack.pop_expect_val(StackValue::Value(get_global(*i, ctx)?))?;
         }
-        _ => unreachable!("opcode in variable caregoty not processed {:?}", opcode),
+        _ => unreachable!("opcode in variable category not processed {:?}", opcode),
     }
     Ok(())
 }

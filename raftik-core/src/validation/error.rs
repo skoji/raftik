@@ -78,7 +78,7 @@ pub enum VInstError {
     #[error("opcode should be constant: {0:?}")]
     OpcodeShouldBeConstant(crate::ast::instructions::Opcode),
 
-    #[error("opcode should be constants: reffering not constant; global get {0}")]
+    #[error("opcode should be constants: referring not constant; global get {0}")]
     GlobalGetShouldBeConstant(u32),
 
     #[error("stack value should be reference type, actual: {0:?}")]
