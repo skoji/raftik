@@ -10,7 +10,7 @@ Implement only what’s essential, and keep the code so clear you can read it in
 
 🚧 **Work in progress** – early implementation. 
 
-Currently, only WebAssembly binary parsing is implemented.
+Currently, only WebAssembly binary parsing and some validation is implemented.
 You can run the following command to parse a WASM file and display the result:
 
 ```
