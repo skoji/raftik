@@ -50,6 +50,11 @@ pub enum ValidationError {
         limits: crate::ast::types::Limits,
         maximum: u32,
     },
+
+    #[error("signature of start function is invalid: {functype:#?}")]
+    StartFuncInvalid {
+        functype: crate::ast::types::FunctionType,
+    },
 }
 
 #[derive(Error, Debug)]

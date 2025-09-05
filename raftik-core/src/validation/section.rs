@@ -2,7 +2,7 @@ use super::{Context, ItemFilter, error::ValidationError, types};
 use crate::ast::{
     section::{
         CodeSection, ExportSection, FunctionSection, GlobalSection, ImportSection, MemorySection,
-        TableSection,
+        StartSection, TableSection,
     },
     types::FunctionType,
 };
@@ -16,7 +16,7 @@ macro_rules! validate_index {
                 referring_index: $referring_index,
                 referred: $referred,
                 referred_index: $referred_index,
-            })?;
+            })
     }};
 }
 
@@ -25,7 +25,7 @@ pub fn validate_function_section(
     context: &Context,
 ) -> Result<(), ValidationError> {
     for (i, type_index) in function_section.type_indices.iter().enumerate() {
-        validate_index!(context.types, "Function", i, "Type", *type_index);
+        validate_index!(context.types, "Function", i, "Type", *type_index)?;
     }
     Ok(())
 }
@@ -39,16 +39,16 @@ pub fn validate_export_section(
     for (i, export) in export_section.exports.iter().enumerate() {
         match export.desc {
             ExportDesc::FunctionIndex(index) => {
-                validate_index!(context.functions, r, i, "Function", index)
+                validate_index!(context.functions, r, i, "Function", index)?;
             }
             ExportDesc::TableIndex(index) => {
-                validate_index!(context.tables, r, i, "Table", index);
+                validate_index!(context.tables, r, i, "Table", index)?;
             }
             ExportDesc::GlobalIndex(index) => {
-                validate_index!(context.globals, r, i, "Global", index);
+                validate_index!(context.globals, r, i, "Global", index)?;
             }
             ExportDesc::MemoryIndex(index) => {
-                validate_index!(context.memories, r, i, "Memory", index);
+                validate_index!(context.memories, r, i, "Memory", index)?;
             }
         }
     }
@@ -153,7 +153,7 @@ pub fn validate_import_section(
     for (i, im) in import_section.imports.iter().enumerate() {
         match &im.desc {
             ImportDesc::TypeIndex(index) => {
-                validate_index!(ctx.types, "Import", i, "Function", *index)
+                validate_index!(ctx.types, "Import", i, "Function", *index)?;
             }
             ImportDesc::Table(table_type) => {
                 if !types::validate_limits(&table_type.limits, MAX_TABLE_SIZE) {
@@ -179,4 +179,27 @@ pub fn validate_import_section(
         }
     }
     Ok(())
+}
+
+pub fn validate_start_section(
+    start_section: &StartSection,
+    ctx: &Context,
+) -> Result<(), ValidationError> {
+    let t = validate_index!(
+        ctx.functions,
+        "Start",
+        0,
+        "Function",
+        start_section.start_function_index
+    )?
+    .t();
+    let f = *validate_index!(ctx.types, "Start", 0, "Types", *t)?;
+
+    if !f.params.is_empty() || !f.results.is_empty() {
+        Err(ValidationError::StartFuncInvalid {
+            functype: f.clone(),
+        })
+    } else {
+        Ok(())
+    }
 }
