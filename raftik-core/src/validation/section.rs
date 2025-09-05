@@ -1,7 +1,8 @@
 use super::{Context, ItemFilter, error::ValidationError, types};
 use crate::ast::{
     section::{
-        CodeSection, ExportSection, FunctionSection, GlobalSection, MemorySection, TableSection,
+        CodeSection, ExportSection, FunctionSection, GlobalSection, ImportSection, MemorySection,
+        TableSection,
     },
     types::FunctionType,
 };
@@ -100,6 +101,7 @@ pub fn validate_table_section(table_section: &TableSection) -> Result<(), Valida
     for (i, table) in table_section.tables.iter().enumerate() {
         if !types::validate_limits(&table.limits, MAX_TABLE_SIZE) {
             return Err(ValidationError::TableSizeError {
+                section: "Table".to_string(),
                 index: i,
                 limits: table.limits.clone(),
                 maximum: MAX_TABLE_SIZE,
@@ -114,6 +116,7 @@ pub fn validate_memory_section(memory_section: &MemorySection) -> Result<(), Val
     for (i, memory) in memory_section.memories.iter().enumerate() {
         if !types::validate_limits(&memory.limits, MAX_PAGES_SIZE) {
             return Err(ValidationError::MemorySizeError {
+                section: "Memory".to_string(),
                 index: i,
                 limits: memory.limits.clone(),
                 maximum: MAX_PAGES_SIZE,
@@ -138,6 +141,42 @@ pub fn validate_global_section(
             &g.expression,
             format!("at global section {}", i),
         )?;
+    }
+    Ok(())
+}
+
+pub fn validate_import_section(
+    import_section: &ImportSection,
+    ctx: &Context,
+) -> Result<(), ValidationError> {
+    use crate::ast::section::ImportDesc;
+    for (i, im) in import_section.imports.iter().enumerate() {
+        match &im.desc {
+            ImportDesc::TypeIndex(index) => {
+                validate_index!(ctx.types, "Import", i, "Function", *index)
+            }
+            ImportDesc::Table(table_type) => {
+                if !types::validate_limits(&table_type.limits, MAX_TABLE_SIZE) {
+                    return Err(ValidationError::TableSizeError {
+                        section: "Import".to_string(),
+                        index: i,
+                        limits: table_type.limits.clone(),
+                        maximum: MAX_TABLE_SIZE,
+                    });
+                }
+            }
+            ImportDesc::Memory(memory_type) => {
+                if !types::validate_limits(&memory_type.limits, MAX_PAGES_SIZE) {
+                    return Err(ValidationError::MemorySizeError {
+                        section: "Import".to_string(),
+                        index: i,
+                        limits: memory_type.limits.clone(),
+                        maximum: MAX_PAGES_SIZE,
+                    });
+                }
+            }
+            ImportDesc::Global(_) => (), // nothing to validate
+        }
     }
     Ok(())
 }

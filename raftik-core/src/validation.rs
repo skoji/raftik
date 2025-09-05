@@ -190,8 +190,10 @@ pub fn validate_module(module: &ModuleParsed) -> Result<(), ValidationError> {
     let mut context = initialize_context(module)?;
     for section in module.sections.iter() {
         match section {
-            Section::Type(_) => (),   // no need to validate
-            Section::Import(_) => (), // TODO; should validate
+            Section::Type(_) => (), // no need to validate
+            Section::Import(import_section) => {
+                section::validate_import_section(import_section, &context)?
+            }
             Section::Function(function_section) => {
                 section::validate_function_section(function_section, &context)?
             }
@@ -424,6 +426,17 @@ mod tests {
     fn test_valid_func_ref_declared_in_global() {
         with_wat(
             r#"(module (global funcref(ref.func 0)) (func $self (result funcref) ref.func 0))"#,
+            |module| {
+                let r = validate_module(&module);
+                assert!(r.is_ok(), "{:#?}", r);
+            },
+        );
+    }
+
+    #[test]
+    fn test_import_section() {
+        with_wat(
+            r#"(module (import "host" "memory" (memory 1 10)) (import "host" "table" (table 10 11 funcref)) (import "host" "func" (func (param i32))) (import "host" "global" (global (mut f64))))"#,
             |module| {
                 let r = validate_module(&module);
                 assert!(r.is_ok(), "{:#?}", r);

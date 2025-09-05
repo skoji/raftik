@@ -33,6 +33,7 @@ pub enum ValidationError {
 
     #[error("table is invalid: index {index}, Limits: {limits:?}, system maximum: {maximum}")]
     TableSizeError {
+        section: String,
         index: usize,
         limits: crate::ast::types::Limits,
         maximum: u32,
@@ -40,6 +41,7 @@ pub enum ValidationError {
 
     #[error("memory is invalid: index {index}, Limits: {limits:?}, system maximum: {maximum}")]
     MemorySizeError {
+        section: String,
         index: usize,
         limits: crate::ast::types::Limits,
         maximum: u32,
