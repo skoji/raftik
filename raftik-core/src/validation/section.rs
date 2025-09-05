@@ -221,7 +221,7 @@ pub fn validate_element_section(
                 validate_index!(ctx.tables, "Element", i, "Table", table_index)?;
                 let f = FunctionType {
                     params: vec![],
-                    results: vec![ValueType::Number(NumberType::I32)],
+                    results: vec![NumberType::I32.into()],
                 };
                 instruction::validate_raw_expression(
                     ctx,

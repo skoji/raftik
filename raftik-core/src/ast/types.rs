@@ -29,15 +29,33 @@ impl TryFrom<u8> for ValueType {
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
-            0x7F => Ok(ValueType::Number(NumberType::I32)),
-            0x7E => Ok(ValueType::Number(NumberType::I64)),
-            0x7D => Ok(ValueType::Number(NumberType::F32)),
-            0x7C => Ok(ValueType::Number(NumberType::F64)),
-            0x7B => Ok(ValueType::Vector(VectorType::V128)),
-            0x70 => Ok(ValueType::Reference(ReferenceType::FuncRef)),
-            0x6F => Ok(ValueType::Reference(ReferenceType::ExternRef)),
+            0x7F => Ok(NumberType::I32.into()),
+            0x7E => Ok(NumberType::I64.into()),
+            0x7D => Ok(NumberType::F32.into()),
+            0x7C => Ok(NumberType::F64.into()),
+            0x7B => Ok(VectorType::V128.into()),
+            0x70 => Ok(ReferenceType::FuncRef.into()),
+            0x6F => Ok(ReferenceType::ExternRef.into()),
             _ => Err("Invalid ValueType"),
         }
+    }
+}
+
+impl From<NumberType> for ValueType {
+    fn from(value: NumberType) -> Self {
+        ValueType::Number(value)
+    }
+}
+
+impl From<VectorType> for ValueType {
+    fn from(value: VectorType) -> Self {
+        ValueType::Vector(value)
+    }
+}
+
+impl From<ReferenceType> for ValueType {
+    fn from(value: ReferenceType) -> Self {
+        ValueType::Reference(value)
     }
 }
 
