@@ -207,7 +207,9 @@ pub fn validate_module(module: &ModuleParsed) -> Result<(), ValidationError> {
             Section::Export(export_section) => {
                 section::validate_export_section(export_section, &context)?
             }
-            Section::Start(_) => (),   // TODO; should validate
+            Section::Start(start_section) => {
+                section::validate_start_section(start_section, &context)?
+            }
             Section::Element(_) => (), // TODO; should validate
             Section::Code(code_section) => {
                 section::validate_code_section(code_section, &mut context)?
@@ -440,6 +442,53 @@ mod tests {
             |module| {
                 let r = validate_module(&module);
                 assert!(r.is_ok(), "{:#?}", r);
+            },
+        );
+    }
+
+    #[test]
+    fn test_start_section() {
+        with_wat(r#"(module (start 0) (func))"#, |module| {
+            let r = validate_module(&module);
+            assert!(r.is_ok(), "{:#?}", r);
+        });
+    }
+
+    #[test]
+    fn test_invalid_start_section() {
+        with_wat(
+            r#"(module (start 0) (func (param i32) (param i32) (result i32) local.get 0 local.get 1 i32.add))"#,
+            |module| {
+                let r = validate_module(&module);
+                if let Err(v) = r {
+                    assert!(matches!(v, ValidationError::StartFuncInvalid { .. }));
+                } else {
+                    unreachable!("unexpected result: {:#?}", r)
+                }
+            },
+        );
+    }
+    #[test]
+    fn test_invalid_start_section_nonexistent() {
+        with_wat(
+            r#"(module (start 1) (func (param i32) (param i32) (result i32) local.get 0 local.get 1 i32.add))"#,
+            |module| {
+                let r = validate_module(&module);
+                if let Err(v) = r {
+                    assert!(
+                        matches!(
+                            v,
+                            ValidationError::IndexOutOfBoundsIn {
+                                referring: "Start",
+                                ..
+                            }
+                        ),
+                        "{:#?}",
+                        v
+                    );
+                } else {
+                    unreachable!("unexpected result: {:#?}", r)
+                }
             },
         );
     }
