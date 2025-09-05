@@ -1,10 +1,13 @@
 use super::{Context, ItemFilter, error::ValidationError, types};
-use crate::ast::{
-    section::{
-        CodeSection, ExportSection, FunctionSection, GlobalSection, ImportSection, MemorySection,
-        StartSection, TableSection,
+use crate::{
+    ast::{
+        section::{
+            CodeSection, ElementSection, ExportSection, FunctionSection, GlobalSection,
+            ImportSection, MemorySection, StartSection, TableSection,
+        },
+        types::{FunctionType, NumberType, ValueType},
     },
-    types::FunctionType,
+    validation::instruction,
 };
 
 macro_rules! validate_index {
@@ -202,4 +205,56 @@ pub fn validate_start_section(
     } else {
         Ok(())
     }
+}
+
+pub fn validate_element_section(
+    element_section: &ElementSection,
+    ctx: &mut Context,
+) -> Result<(), ValidationError> {
+    for (i, e) in element_section.elements.iter().enumerate() {
+        match e.kind {
+            crate::ast::section::ElementKind::Active {
+                table_index,
+                ref offset_expression,
+            } => {
+                let table_index = table_index.unwrap_or(0);
+                validate_index!(ctx.tables, "Element", i, "Table", table_index)?;
+                let f = FunctionType {
+                    params: vec![],
+                    results: vec![ValueType::Number(NumberType::I32)],
+                };
+                instruction::validate_raw_expression(
+                    ctx,
+                    &f,
+                    offset_expression,
+                    format!("at element section #{}", i),
+                )?;
+            }
+            crate::ast::section::ElementKind::Declarative => (),
+            crate::ast::section::ElementKind::Passive => (),
+        }
+        match &e.items {
+            crate::ast::section::ElementItems::Functions(items) => {
+                for index in items.iter() {
+                    // TODO; should include the count of item in error message
+                    validate_index!(ctx.functions, "Element-Items", i, "Function", *index)?;
+                }
+            }
+            crate::ast::section::ElementItems::Expressions(reference_type, raw_expressions) => {
+                let f = FunctionType {
+                    params: vec![],
+                    results: vec![ValueType::Reference(*reference_type)],
+                };
+                for (j, e) in raw_expressions.iter().enumerate() {
+                    instruction::validate_raw_expression(
+                        ctx,
+                        &f,
+                        e,
+                        format!("at element section #{}, item #{}", i, j),
+                    )?;
+                }
+            }
+        }
+    }
+    Ok(())
 }

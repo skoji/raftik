@@ -210,7 +210,11 @@ pub fn validate_module(module: &ModuleParsed) -> Result<(), ValidationError> {
             Section::Start(start_section) => {
                 section::validate_start_section(start_section, &context)?
             }
-            Section::Element(_) => (), // TODO; should validate
+            Section::Element(element_section) => {
+                let mut c_prime = context.prime();
+                c_prime.instructions_should_be_constant = true;
+                section::validate_element_section(element_section, &mut c_prime)?
+            }
             Section::Code(code_section) => {
                 section::validate_code_section(code_section, &mut context)?
             }
