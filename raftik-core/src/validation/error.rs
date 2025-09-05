@@ -31,7 +31,9 @@ pub enum ValidationError {
     #[error("collect func ref from expression error")]
     CollectFuncRefFromExprError { desc: String, error: VInstError },
 
-    #[error("table is invalid: index {index}, Limits: {limits:?}, system maximum: {maximum}")]
+    #[error(
+        "table is invalid in section {section}: index {index}, Limits: {limits:?}, system maximum: {maximum}"
+    )]
     TableSizeError {
         section: String,
         index: usize,
@@ -39,7 +41,9 @@ pub enum ValidationError {
         maximum: u32,
     },
 
-    #[error("memory is invalid: index {index}, Limits: {limits:?}, system maximum: {maximum}")]
+    #[error(
+        "memory is invalid in section {section}: index {index}, Limits: {limits:?}, system maximum: {maximum}"
+    )]
     MemorySizeError {
         section: String,
         index: usize,
