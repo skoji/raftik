@@ -112,11 +112,8 @@ mod tests {
     fn test_parse_function_type() {
         let input = [0x60, 0x02, 0x7f, 0x7e, 0x01, 0x7d];
         let expected = FunctionType {
-            params: vec![
-                ValueType::Number(NumberType::I32),
-                ValueType::Number(NumberType::I64),
-            ],
-            results: vec![ValueType::Number(NumberType::F32)],
+            params: vec![NumberType::I32.into(), NumberType::I64.into()],
+            results: vec![NumberType::F32.into()],
         };
         let result = parse_function_type(&input);
         assert_eq!(result, Ok((&[][..], expected)));
@@ -173,7 +170,7 @@ mod tests {
     fn test_parse_global_type() {
         let input = [0x7f, 0x01]; // I32 with Var mutability
         let expected = GlobalType {
-            val_type: ValueType::Number(NumberType::I32),
+            val_type: NumberType::I32.into(),
             mutability: Mutability::Var,
         };
         let result = parse_global_type(&input);

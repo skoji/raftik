@@ -210,7 +210,11 @@ pub fn validate_module(module: &ModuleParsed) -> Result<(), ValidationError> {
             Section::Start(start_section) => {
                 section::validate_start_section(start_section, &context)?
             }
-            Section::Element(_) => (), // TODO; should validate
+            Section::Element(element_section) => {
+                let mut c_prime = context.prime();
+                c_prime.instructions_should_be_constant = true;
+                section::validate_element_section(element_section, &mut c_prime)?
+            }
             Section::Code(code_section) => {
                 section::validate_code_section(code_section, &mut context)?
             }
@@ -492,13 +496,7 @@ mod tests {
                 let r = validate_module(&module);
                 if let Err(v) = r {
                     assert!(
-                        matches!(
-                            v,
-                            ValidationError::IndexOutOfBoundsIn {
-                                referring: "Start",
-                                ..
-                            }
-                        ),
+                        matches!(v, ValidationError::IndexOutOfBoundsIn { .. }),
                         "{:#?}",
                         v
                     );
@@ -507,5 +505,24 @@ mod tests {
                 }
             },
         );
+    }
+    #[test]
+    fn test_element_section() {
+        let wats = [
+            "(module (table 1 funcref) (func $f0) (elem (i32.const 0) func $f0))",
+            "(module (func $f0) (elem func $f0))",
+            "(module (table $t0 1 funcref) (table $t1 1 funcref) (func $f0) (elem 1 (i32.const 0) func $f0))",
+            "(module (func $f0) (elem declare func $f0))",
+            "(module (table 1 funcref) (func $f0) (func) (elem (i32.const 0) funcref (ref.func 0)))",
+            "(module (func $f0) (elem funcref (ref.func 0)))",
+            "(module (table $t0 1 funcref) (table $t1 1 funcref) (func $f0) (elem 1 (i32.const 0) funcref (ref.func 0)))",
+            "(module (func $f0) (elem declare funcref (ref.func 0)))",
+        ];
+        for wat in wats.iter() {
+            with_wat(wat, |module| {
+                let r = validate_module(&module);
+                assert!(r.is_ok(), "{}, {:#?}", wat, r);
+            });
+        }
     }
 }

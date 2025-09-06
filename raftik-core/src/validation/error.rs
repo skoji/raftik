@@ -6,9 +6,9 @@ pub enum ValidationError {
         "index {referred_index} out of bounds in {referred} section (referenced from {referring} section at index {referring_index})"
     )]
     IndexOutOfBoundsIn {
-        referring: &'static str,
+        referring: String,
         referring_index: usize,
-        referred: &'static str,
+        referred: String,
         referred_index: u32,
     },
     #[error(

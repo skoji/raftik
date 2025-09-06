@@ -71,11 +71,8 @@ mod tests {
                     ModuleParsed {
                         sections: vec![Section::Type(TypeSection {
                             types: vec![FunctionType {
-                                params: vec![
-                                    ValueType::Number(NumberType::I32),
-                                    ValueType::Number(NumberType::I32)
-                                ],
-                                results: vec![ValueType::Number(NumberType::I64)]
+                                params: vec![NumberType::I32.into(), NumberType::I32.into(),],
+                                results: vec![NumberType::I64.into()]
                             }]
                         })]
                     }
@@ -95,7 +92,7 @@ mod tests {
                     module.sections[0],
                     Section::Type(TypeSection {
                         types: vec![FunctionType {
-                            params: vec![ValueType::Number(NumberType::I32)],
+                            params: vec![NumberType::I32.into()],
                             results: vec![]
                         }]
                     })
@@ -165,7 +162,7 @@ mod tests {
                             module: "host".to_string(),
                             name: "global".to_string(),
                             desc: ImportDesc::Global(GlobalType {
-                                val_type: ValueType::Number(NumberType::I64),
+                                val_type: NumberType::I64.into(),
                                 mutability: Mutability::Const
                             })
                         }
@@ -186,8 +183,8 @@ mod tests {
                     module.sections[0],
                     Section::Type(TypeSection {
                         types: vec![FunctionType {
-                            params: vec![ValueType::Number(NumberType::I32)],
-                            results: vec![ValueType::Number(NumberType::I32)]
+                            params: vec![NumberType::I32.into()],
+                            results: vec![NumberType::I32.into()]
                         }]
                     })
                 );
@@ -247,7 +244,7 @@ mod tests {
                 Section::Global(GlobalSection {
                     globals: vec![Global {
                         global_type: GlobalType {
-                            val_type: ValueType::Number(NumberType::I32),
+                            val_type: NumberType::I32.into(),
                             mutability: Mutability::Const,
                         },
                         expression: RawExpression {
@@ -492,7 +489,7 @@ mod tests {
                         code: vec![FunctionBody {
                             locals: vec![Locals {
                                 count: 2,
-                                value_type: ValueType::Number(NumberType::F64)
+                                value_type: NumberType::F64.into(),
                             }],
                             expression: RawExpression {
                                 instructions: &[0x20, 0, 0x20, 1, 0x6a][..]
