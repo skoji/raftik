@@ -15,9 +15,9 @@ macro_rules! validate_index {
         $field
             .get($referred_index as usize)
             .ok_or(ValidationError::IndexOutOfBoundsIn {
-                referring: $referring,
+                referring: $referring.to_string(),
                 referring_index: $referring_index,
-                referred: $referred,
+                referred: $referred.to_string(),
                 referred_index: $referred_index,
             })
     }};
@@ -235,9 +235,14 @@ pub fn validate_element_section(
         }
         match &e.items {
             crate::ast::section::ElementItems::Functions(items) => {
-                for index in items.iter() {
-                    // TODO; should include the count of item in error message
-                    validate_index!(ctx.functions, "Element-Items", i, "Function", *index)?;
+                for (j, index) in items.iter().enumerate() {
+                    validate_index!(
+                        ctx.functions,
+                        format!("Element-Items: {}", j),
+                        i,
+                        "Function",
+                        *index
+                    )?;
                 }
             }
             crate::ast::section::ElementItems::Expressions(reference_type, raw_expressions) => {

@@ -496,13 +496,7 @@ mod tests {
                 let r = validate_module(&module);
                 if let Err(v) = r {
                     assert!(
-                        matches!(
-                            v,
-                            ValidationError::IndexOutOfBoundsIn {
-                                referring: "Start",
-                                ..
-                            }
-                        ),
+                        matches!(v, ValidationError::IndexOutOfBoundsIn { .. }),
                         "{:#?}",
                         v
                     );
