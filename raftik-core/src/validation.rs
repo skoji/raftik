@@ -512,4 +512,23 @@ mod tests {
             },
         );
     }
+    #[test]
+    fn test_element_section() {
+        let wats = [
+            "(module (table 1 funcref) (func $f0) (elem (i32.const 0) func $f0))",
+            "(module (func $f0) (elem func $f0))",
+            "(module (table $t0 1 funcref) (table $t1 1 funcref) (func $f0) (elem 1 (i32.const 0) func $f0))",
+            "(module (func $f0) (elem declare func $f0))",
+            "(module (table 1 funcref) (func $f0) (func) (elem (i32.const 0) funcref (ref.func 0)))",
+            "(module (func $f0) (elem funcref (ref.func 0)))",
+            "(module (table $t0 1 funcref) (table $t1 1 funcref) (func $f0) (elem 1 (i32.const 0) funcref (ref.func 0)))",
+            "(module (func $f0) (elem declare funcref (ref.func 0)))",
+        ];
+        for wat in wats.iter() {
+            with_wat(wat, |module| {
+                let r = validate_module(&module);
+                assert!(r.is_ok(), "{}, {:#?}", wat, r);
+            });
+        }
+    }
 }
