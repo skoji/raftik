@@ -64,6 +64,7 @@ struct Context<'a> {
     pub globals: Vec<ItemDesc<&'a GlobalType>>,
     pub locals: Vec<ValueType>,
     pub refs: HashSet<u32>,
+    pub data_segments: Vec<()>,
     pub instructions_should_be_constant: bool,
 }
 
@@ -77,6 +78,7 @@ impl<'a> Context<'a> {
             globals: self.globals.imported(),
             locals: self.locals.clone(),
             refs: self.refs.clone(),
+            data_segments: self.data_segments.clone(),
             instructions_should_be_constant: self.instructions_should_be_constant,
         }
     }
@@ -178,7 +180,9 @@ fn initialize_context<'a>(module: &'a ModuleParsed<'a>) -> Result<Context<'a>, V
                 }
             }
             Section::Code(_) => (),
-            Section::Data(_) => (),
+            Section::Data(data_section) => {
+                context.data_segments = vec![(); data_section.segments.len()];
+            }
             Section::DataCount(_) => (),
             Section::Custom(_) => (),
         }
@@ -218,9 +222,18 @@ pub fn validate_module(module: &ModuleParsed) -> Result<(), ValidationError> {
             Section::Code(code_section) => {
                 section::validate_code_section(code_section, &mut context)?
             }
-            Section::Data(_) => (),      // TODO; should validate
-            Section::DataCount(_) => (), // TODO; should validate
-            Section::Custom(_) => (),    // no need to validate
+            Section::Data(_) => (), // TODO; should validate
+            Section::DataCount(data_count_section) => {
+                let count = data_count_section.count as usize;
+                let segment_size = context.data_segments.len();
+                if count != segment_size {
+                    return Err(ValidationError::DataCountSectionDiffers {
+                        count,
+                        segment_size,
+                    });
+                }
+            }
+            Section::Custom(_) => (), // no need to validate
         }
     }
     Ok(())
