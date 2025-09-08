@@ -187,6 +187,12 @@ pub enum SectionID {
     DataCount = 12,
 }
 
+impl From<SectionID> for u8 {
+    fn from(value: SectionID) -> Self {
+        value as u8
+    }
+}
+
 impl TryFrom<u8> for SectionID {
     type Error = ();
 
