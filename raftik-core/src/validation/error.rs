@@ -55,6 +55,9 @@ pub enum ValidationError {
     StartFuncInvalid {
         functype: crate::ast::types::FunctionType,
     },
+
+    #[error("data count section {count} differs from data segment size {segment_size}")]
+    DataCountSectionDiffers { count: usize, segment_size: usize },
 }
 
 #[derive(Error, Debug)]

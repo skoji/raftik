@@ -2,8 +2,8 @@ use super::{Context, ItemFilter, error::ValidationError, types};
 use crate::{
     ast::{
         section::{
-            CodeSection, ElementSection, ExportSection, FunctionSection, GlobalSection,
-            ImportSection, MemorySection, StartSection, TableSection,
+            CodeSection, DataSection, ElementSection, ExportSection, FunctionSection,
+            GlobalSection, ImportSection, MemorySection, StartSection, TableSection,
         },
         types::{FunctionType, NumberType, ValueType},
     },
@@ -259,6 +259,35 @@ pub fn validate_element_section(
                     )?;
                 }
             }
+        }
+    }
+    Ok(())
+}
+
+pub fn validate_data_section(
+    data_section: &DataSection,
+    ctx: &mut Context,
+) -> Result<(), ValidationError> {
+    for (i, d) in data_section.segments.iter().enumerate() {
+        match d.mode {
+            crate::ast::section::DataMode::Active {
+                memory_index,
+                ref offset_expression,
+            } => {
+                let index = memory_index.unwrap_or(0);
+                validate_index!(ctx.memories, "Data", i, "Memory", index)?;
+                let f = FunctionType {
+                    params: vec![],
+                    results: vec![NumberType::I32.into()],
+                };
+                instruction::validate_raw_expression(
+                    ctx,
+                    &f,
+                    offset_expression,
+                    format!("at data section #{}", i),
+                )?;
+            }
+            crate::ast::section::DataMode::Passive => (),
         }
     }
     Ok(())
