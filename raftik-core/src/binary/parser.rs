@@ -8,7 +8,7 @@ mod types;
 
 use module::parse_module;
 
-use crate::ast::ModuleParsed;
+use crate::ast::{ModuleParsed, section::SectionID};
 
 impl<'a> ModuleParsed<'a> {
     pub fn from_slice(input: &'a [u8]) -> Result<Self, String> {
@@ -17,11 +17,14 @@ impl<'a> ModuleParsed<'a> {
         // check section order
         let mut last_id = 0u8;
         for s in &module.sections {
-            let id = s.id() as u8;
+            let id: u8 = s.id().into();
             if id == 0 {
                 continue;
             }
-            if id <= last_id {
+            if id <= last_id
+                && !(last_id == SectionID::DataCount.into()
+                    && (s.id() == SectionID::Code || s.id() == SectionID::Data))
+            {
                 return Err(format!(
                     "Sections are not in the correct order: {:?} < {:?}",
                     s.id(),
