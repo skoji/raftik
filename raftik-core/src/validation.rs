@@ -222,7 +222,11 @@ pub fn validate_module(module: &ModuleParsed) -> Result<(), ValidationError> {
             Section::Code(code_section) => {
                 section::validate_code_section(code_section, &mut context)?
             }
-            Section::Data(_) => (), // TODO; should validate
+            Section::Data(data_section) => {
+                let mut c_prime = context.prime();
+                c_prime.instructions_should_be_constant = true;
+                section::validate_data_section(data_section, &mut c_prime)?
+            }
             Section::DataCount(data_count_section) => {
                 let count = data_count_section.count as usize;
                 let segment_size = context.data_segments.len();
@@ -537,5 +541,15 @@ mod tests {
                 assert!(r.is_ok(), "{}, {:#?}", wat, r);
             });
         }
+    }
+    #[test]
+    fn test_data_section() {
+        with_wat(
+            r#"(module (memory 1 10) (data (i32.const 0) "0") (data "1"))"#,
+            |module| {
+                let r = validate_module(&module);
+                assert!(r.is_ok(), "{:#?}", r);
+            },
+        );
     }
 }
