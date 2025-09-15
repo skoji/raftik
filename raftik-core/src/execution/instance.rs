@@ -9,7 +9,7 @@ pub struct ModuleInstance {
 }
 
 #[derive(Debug, Clone)]
-pub struct FuncInstance<'a> {
+pub struct WasmFuncInstance<'a> {
     pub t: FunctionType,
     pub module: &'a ModuleInstance,
     pub locals: Vec<ValueType>,
@@ -20,4 +20,21 @@ pub struct FuncInstance<'a> {
 pub struct ExternalFuncInstance {
     pub t: FunctionType,
     // TODO; expression of body implementation
+}
+
+#[derive(Debug, Clone)]
+pub enum FuncInstance<'a> {
+    Wasm(WasmFuncInstance<'a>),
+    External(ExternalFuncInstance),
+}
+
+#[derive(Debug, Clone)]
+pub struct ExportInstance {
+    pub name: String,
+    pub value: ExportValue,
+}
+
+#[derive(Debug, Clone)]
+pub enum ExportValue {
+    Func(usize),
 }
