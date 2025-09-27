@@ -1,6 +1,7 @@
-use super::instance::FuncInstance;
+use super::instance::{FuncInstance, ModuleInstance};
 
 #[derive(Debug, Clone, Default)]
-pub struct Store<'a> {
-    pub funcs: Vec<FuncInstance<'a>>,
+pub struct Store {
+    modules: Vec<ModuleInstance>,
+    funcs: Vec<FuncInstance>,
 }

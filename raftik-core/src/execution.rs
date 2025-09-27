@@ -1,3 +1,3 @@
 mod instance;
 mod store;
-mod value;
+pub mod value;

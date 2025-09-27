@@ -5,13 +5,13 @@ use crate::ast::{
 
 #[derive(Debug, Clone)]
 pub struct ModuleInstance {
-    pub funcs: Vec<usize>,
+    pub func_addresses: Vec<usize>,
 }
 
 #[derive(Debug, Clone)]
-pub struct WasmFuncInstance<'a> {
+pub struct WasmFuncInstance {
     pub t: FunctionType,
-    pub module: &'a ModuleInstance,
+    pub module_address: usize,
     pub locals: Vec<ValueType>,
     pub body: Vec<Opcode>,
 }
@@ -23,8 +23,8 @@ pub struct ExternalFuncInstance {
 }
 
 #[derive(Debug, Clone)]
-pub enum FuncInstance<'a> {
-    Wasm(WasmFuncInstance<'a>),
+pub enum FuncInstance {
+    Wasm(WasmFuncInstance),
     External(ExternalFuncInstance),
 }
 
