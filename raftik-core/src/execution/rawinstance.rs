@@ -4,12 +4,12 @@ use crate::ast::{
 };
 
 #[derive(Debug, Clone)]
-pub struct ModuleInstance {
+pub struct Module {
     pub func_addresses: Vec<usize>,
 }
 
 #[derive(Debug, Clone)]
-pub struct WasmFuncInstance {
+pub struct WasmFunc {
     pub t: FunctionType,
     pub module_address: usize,
     pub locals: Vec<ValueType>,
@@ -17,19 +17,19 @@ pub struct WasmFuncInstance {
 }
 
 #[derive(Debug, Clone)]
-pub struct ExternalFuncInstance {
+pub struct ExternalFunc {
     pub t: FunctionType,
     // TODO; expression of body implementation
 }
 
 #[derive(Debug, Clone)]
-pub enum FuncInstance {
-    Wasm(WasmFuncInstance),
-    External(ExternalFuncInstance),
+pub enum Func {
+    Wasm(WasmFunc),
+    External(ExternalFunc),
 }
 
 #[derive(Debug, Clone)]
-pub struct ExportInstance {
+pub struct Export {
     pub name: String,
     pub value: ExportValue,
 }
