@@ -3,7 +3,7 @@ use crate::ast::{
     types::{FunctionType, ValueType},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Module {
     pub func_addresses: Vec<usize>,
 }
