@@ -5,7 +5,7 @@ struct Module {
 }
 
 impl Module {
-    fn new(_wat: String, store: &mut Store) -> Self {
+    fn new(_wat: &[u8], store: &mut Store) -> Self {
         let raw_module = RawModule::default();
         let index = store.store_module(raw_module);
         Module { index }
