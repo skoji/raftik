@@ -12,7 +12,7 @@ impl Store {
     }
 
     // internal APIs
-    pub(super) fn store_module(&mut self, m: Module) -> usize {
+    pub(super) fn register_module(&mut self, m: Module) -> usize {
         self.modules.push(m);
         self.modules.len() - 1
     }
@@ -21,7 +21,7 @@ impl Store {
         self.modules.get_mut(i)
     }
 
-    pub(super) fn store_func(&mut self, f: Func) -> usize {
+    pub(super) fn register_func(&mut self, f: Func) -> usize {
         self.funcs.push(f);
         self.funcs.len() - 1
     }
