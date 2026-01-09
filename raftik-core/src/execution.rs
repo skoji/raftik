@@ -1,5 +1,5 @@
 pub mod error;
 pub mod instance;
 mod rawinstance;
-mod store;
+pub mod store;
 pub mod value;

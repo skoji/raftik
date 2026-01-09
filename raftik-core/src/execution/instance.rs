@@ -2,12 +2,13 @@ use super::error::Error;
 use super::{rawinstance::Module as RawModule, store::Store};
 use crate::{ast::ModuleParsed, validation::validate_module};
 
-struct Module {
+#[derive(Debug, Clone, Default)]
+pub struct Module {
     index: usize,
 }
 
 impl Module {
-    fn from_slice(wat: &[u8], store: &mut Store) -> Result<Self, Error> {
+    pub fn from_slice(wat: &[u8], store: &mut Store) -> Result<Self, Error> {
         let module =
             ModuleParsed::from_slice(wat).map_err(|e| Error::ParseError { parse_error: e })?;
         validate_module(&module).map_err(|e| Error::ValidationError {
