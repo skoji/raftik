@@ -5,7 +5,7 @@ edition.workspace = true
 
 [dependencies]
 nom = "8.0.0"
-thiserror = "2.0.17"
+thiserror = "2.0.18"
 
 [dev-dependencies]
 wat = "1.244.0"
