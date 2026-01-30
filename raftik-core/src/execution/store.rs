@@ -1,4 +1,8 @@
-use super::rawinstance::{Func, Module};
+use super::{
+    error::Error,
+    rawinstance::{Func, Module},
+};
+use crate::ast::ModuleParsed;
 
 #[derive(Debug, Clone, Default)]
 pub struct Store {
@@ -12,6 +16,12 @@ impl Store {
     }
 
     // internal APIs
+    pub(super) fn register_module_from_wat(&mut self, wat: &[u8]) -> Result<usize, Error> {
+        let m = Module::from_slice(wat, self)?;
+        self.modules.push(m);
+        Ok(self.modules.len() - 1)
+    }
+
     pub(super) fn register_module(&mut self, m: Module) -> usize {
         self.modules.push(m);
         self.modules.len() - 1
