@@ -22,6 +22,10 @@ cargo run <wasm file>
 
 **raftik** (*RAF-tik*) — diminutive of “raft”, reflecting our goal of a tiny craft that keeps your WebAssembly modules afloat.
 
+## Development Policy
+
+This project does not use Agentic Coding at all. AI assistance in code reviews is not avoided.
+
 ## License
 
 See [LICENSE](LICENSE)
