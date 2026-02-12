@@ -22,11 +22,6 @@ impl Store {
         Ok(self.modules.len() - 1)
     }
 
-    pub(super) fn register_module(&mut self, m: Module) -> usize {
-        self.modules.push(m);
-        self.modules.len() - 1
-    }
-
     pub(super) fn mut_module(&mut self, i: usize) -> Option<&mut Module> {
         self.modules.get_mut(i)
     }

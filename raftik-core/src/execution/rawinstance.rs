@@ -3,7 +3,7 @@ use crate::{
     ast::{
         ModuleParsed,
         instructions::Opcode,
-        section::{CodeSection, FunctionSection, TypeSection},
+        section::{FunctionBody, Import, Section, SectionID},
         types::{FunctionType, ValueType},
     },
     validation::validate_module,
@@ -13,6 +13,39 @@ use crate::{
 pub struct Module {
     pub func_types: Vec<FunctionType>,
     pub func_addresses: Vec<usize>,
+}
+
+// workspace for build module
+#[derive(Debug, Default)]
+struct Sections<'a> {
+    pub code: Vec<&'a FunctionBody<'a>>,
+    pub functions: Vec<u32>, // type indicies
+    pub imports: Vec<&'a Import>,
+    pub types: Vec<&'a FunctionType>,
+}
+
+impl<'a> Sections<'a> {
+    pub fn create_from_parsed_module(module_parsed: &'a ModuleParsed<'a>) -> Self {
+        let mut r = Self::default();
+        for section in module_parsed.sections.iter() {
+            match section {
+                Section::Code(code_section) => {
+                    r.code = code_section.code.iter().collect();
+                }
+                Section::Function(function_section) => {
+                    r.functions = function_section.type_indices.clone();
+                }
+                Section::Import(import_section) => {
+                    r.imports = import_section.imports.iter().collect();
+                }
+                Section::Type(type_section) => {
+                    r.types = type_section.types.iter().collect();
+                }
+                _ => (),
+            }
+        }
+        r
+    }
 }
 
 impl Module {
@@ -25,6 +58,15 @@ impl Module {
         let module = Module::default();
         Ok(module)
     }
+
+    fn build_from_parsed(module_parsed: &ModuleParsed, store: &mut Store) -> Result<Self, Error> {
+        // parse module parsed and build store, and module
+        let mut r = Module::default();
+        let sections = Sections::create_from_parsed_module(module_parsed);
+        Ok(r)
+    }
+
+    fn process_imports(&mut self, sections: &Sections, store: &mut Store) {}
 }
 
 #[derive(Debug, Clone)]
