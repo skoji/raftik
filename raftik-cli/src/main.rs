@@ -1,6 +1,6 @@
 use std::env;
 
-use raftik_core::{ast::ModuleParsed, validation::validate_module};
+use raftik_core::{Module, Store};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
@@ -11,9 +11,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let wasm_file = &args[1];
     let data = std::fs::read(wasm_file)?;
-    let module = ModuleParsed::from_slice(&data)?;
+    let mut store = Store::default();
+    let module = Module::from_slice(&data, &mut store)?;
     println!("{:#?}", module);
-    validate_module(&module)?;
-    println!("validation succeeded");
     Ok(())
 }
